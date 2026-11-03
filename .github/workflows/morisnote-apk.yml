@@ -1,0 +1,101 @@
+name: Build Morisnote APK
+
+# Personal build for sideloading onto the user's tablet.
+# Flutter cannot AOT-build Android on a Linux arm64 host, so the APK is built here.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [personal, ci, main]
+
+concurrency:
+  group: apk-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  apk:
+    name: Build signed APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Checkout (with Flutter submodule)
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Cache Flutter engine + pub + gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.pub-cache
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            submodules/flutter/bin/cache
+          key: morisnote-${{ hashFiles('pubspec.yaml', 'pubspec.lock') }}-${{ hashFiles('.gitmodules') }}
+          restore-keys: |
+            morisnote-
+
+      - name: Restore signing key
+        env:
+          SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
+          KEY_STORE_PASSWORD: ${{ secrets.KEY_STORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          ALIAS: ${{ secrets.ALIAS }}
+        run: |
+          set -euo pipefail
+          if [ -z "${SIGNING_KEY:-}" ]; then
+            echo "::error::SIGNING_KEY secret is missing"; exit 1
+          fi
+          echo "$SIGNING_KEY" | base64 -d > android/android.keystore
+          {
+            echo "storePassword=$KEY_STORE_PASSWORD"
+            echo "keyPassword=$KEY_PASSWORD"
+            echo "keyAlias=$ALIAS"
+            echo "storeFile=../android.keystore"
+          } > android/key.properties
+
+      - name: Configure Android SDK / NDK / JDK
+        run: |
+          set -euo pipefail
+          NDK_DIR="${ANDROID_NDK_LATEST_HOME:-}"
+          if [ -z "$NDK_DIR" ]; then
+            NDK_DIR=$(ls -d "$ANDROID_HOME"/ndk/* | sort -V | tail -1)
+          fi
+          echo "Using NDK: $NDK_DIR"
+          echo "ANDROID_NDK=$NDK_DIR" >> "$GITHUB_ENV"
+          echo "ANDROID_NDK_HOME=$NDK_DIR" >> "$GITHUB_ENV"
+          echo "ANDROID_NDK_ROOT=$NDK_DIR" >> "$GITHUB_ENV"
+          if [ -n "${JAVA_HOME_21_X64:-}" ]; then
+            echo "JAVA_HOME=$JAVA_HOME_21_X64" >> "$GITHUB_ENV"
+          fi
+          echo "$GITHUB_WORKSPACE/submodules/flutter/bin" >> "$GITHUB_PATH"
+
+      - name: Flutter version
+        run: |
+          flutter --version
+          flutter config --no-cli-animations
+
+      - name: Build APK (signed, personal flavour)
+        run: |
+          flutter build apk --release \
+            --target-platform android-arm64,android-arm \
+            --build-number="${{ github.run_number }}" \
+            --dart-define=FLAVOR="Morisnote personal" \
+            --dart-define=APP_STORE="sideload" \
+            --dart-define=UPDATE_CHECK=false
+
+      - name: Collect APK
+        run: |
+          set -euo pipefail
+          mkdir -p output
+          cp build/app/outputs/flutter-apk/app-release.apk \
+             "output/Morisnote-$(grep -oP "(?<=buildName = ').*(?=')" lib/data/version.dart)-build${{ github.run_number }}.apk"
+          ls -lh output
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Morisnote-APK
+          path: output/*.apk
+          if-no-files-found: error
+          retention-days: 90
