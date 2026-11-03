@@ -12,5 +12,17 @@ extension CanvasBackgroundPatternLocalized on CanvasBackgroundPattern {
     .staffs => t.editor.menu.bgPatterns.staffs,
     .tablature => t.editor.menu.bgPatterns.tablature,
     .cornell => t.editor.menu.bgPatterns.cornell,
+    // Morisnote additions. Not in upstream's translation files yet, so these
+    // fall back to English: add them to lib/i18n/en.i18n.json and let slang
+    // regenerate strings_*.g.dart to translate them properly.
+    .graph => 'Graph paper',
+    .isometric => 'Isometric',
+    .hex => 'Hexagon',
+    .weeklyPlanner => 'Weekly planner',
+    .dailyPlanner => 'Daily planner',
+    .checklist => 'Checklist',
+    .storyboard => 'Storyboard',
+    .calligraphy => 'Calligraphy',
+    .halfLined => 'Half lined',
   };
 }

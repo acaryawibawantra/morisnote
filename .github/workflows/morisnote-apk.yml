@@ -18,20 +18,24 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 90
     steps:
-      - name: Checkout (with Flutter submodule)
+      - name: Checkout
         uses: actions/checkout@v4
-        with:
-          submodules: recursive
 
-      - name: Cache Flutter engine + pub + gradle
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.47.9"
+          channel: stable
+          cache: true
+
+      - name: Cache pub + gradle
         uses: actions/cache@v4
         with:
           path: |
             ~/.pub-cache
             ~/.gradle/caches
             ~/.gradle/wrapper
-            submodules/flutter/bin/cache
-          key: morisnote-${{ hashFiles('pubspec.yaml', 'pubspec.lock') }}-${{ hashFiles('.gitmodules') }}
+          key: morisnote-${{ hashFiles('pubspec.yaml', 'pubspec.lock') }}
           restore-keys: |
             morisnote-
 
@@ -68,7 +72,6 @@ jobs:
           if [ -n "${JAVA_HOME_21_X64:-}" ]; then
             echo "JAVA_HOME=$JAVA_HOME_21_X64" >> "$GITHUB_ENV"
           fi
-          echo "$GITHUB_WORKSPACE/submodules/flutter/bin" >> "$GITHUB_PATH"
 
       - name: Flutter version
         run: |
