@@ -28,7 +28,9 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.acaryawibawantra.morisnote"
+        // Separate id from earlier sideloaded builds whose signing key differed,
+        // so this install never hits "package conflicts with existing package".
+        applicationId = "com.acaryawibawantra.morisnote.app"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
