@@ -459,7 +459,7 @@ class CanvasGestureDetectorState extends State<CanvasGestureDetector> {
         event.kind == PointerDeviceKind.touch &&
         stows.palmRejection.value &&
         (event is PointerDownEvent || event is PointerMoveEvent)) {
-      final contactSize = event.size.longestSide;
+      final contactSize = event.size;
       isPalm = contactSize >= _palmRejectionThreshold;
       if (contactSize > 4) {
         _log.fine(
