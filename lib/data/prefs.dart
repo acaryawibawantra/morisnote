@@ -209,6 +209,22 @@ class Stows {
     volatile: !_isOnMainIsolate,
   );
 
+  /// Morisnote: when enabled, only the stylus can ink; the finger is always
+  /// used for panning and zooming, even if finger drawing is turned on.
+  final stylusOnlyInput = PlainStow(
+    'stylusOnlyInput',
+    false,
+    volatile: !_isOnMainIsolate,
+  );
+
+  /// Morisnote: ignore touch contacts that are wide (a resting palm) so they
+  /// cannot leave stray strokes while writing fast.
+  final palmRejection = PlainStow(
+    'palmRejection',
+    true,
+    volatile: !_isOnMainIsolate,
+  );
+
   final recentColorsChronological = PlainStow(
     'recentColorsChronological',
     <String>[],

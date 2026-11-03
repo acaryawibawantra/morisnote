@@ -419,6 +419,23 @@ class _SettingsPageState extends State<SettingsPage> {
                   },
                 ),
 
+                // Morisnote: pen vs finger input. Labels are hardcoded so this
+                // fork doesn't need the upstream translation pipeline.
+                SettingsSwitch(
+                  title: 'Stylus-only drawing',
+                  subtitle:
+                      'The pen always inks; the finger always pans and zooms',
+                  icon: CupertinoIcons.pencil_outline,
+                  pref: stows.stylusOnlyInput,
+                ),
+                SettingsSwitch(
+                  title: 'Palm rejection',
+                  subtitle:
+                      'Ignore wide touch contacts so a resting palm cannot draw',
+                  icon: CupertinoIcons.hand_point_left,
+                  pref: stows.palmRejection,
+                ),
+
                 SettingsSubtitle(subtitle: t.settings.prefCategories.editor),
                 SettingsSelection(
                   title: t.settings.prefLabels.editorToolbarAlignment,

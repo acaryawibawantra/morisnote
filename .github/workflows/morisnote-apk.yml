@@ -18,6 +18,19 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 90
     steps:
+      - name: Free up disk space
+        run: |
+          set -euo pipefail
+          df -h /
+          # The Rust build (super_clipboard) needs several GB; the runner image
+          # ships ~20 GB of toolchains this build never uses.
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/share/boost \
+            /opt/hostedtoolcache/CodeQL || true
+          sudo rm -rf /usr/local/lib/android/sdk/system-images \
+            /usr/local/lib/android/sdk/emulator || true
+          sudo docker image prune --all --force || true
+          df -h /
+
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -78,10 +91,13 @@ jobs:
           flutter --version
           flutter config --no-cli-animations
 
+      - name: Analyze (errors only, fail fast)
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings
+
       - name: Build APK (signed, personal flavour)
         run: |
           flutter build apk --release \
-            --target-platform android-arm64,android-arm \
+            --target-platform android-arm64 \
             --build-number="${{ github.run_number }}" \
             --dart-define=FLAVOR="Morisnote personal" \
             --dart-define=APP_STORE="sideload" \

@@ -489,6 +489,10 @@ class EditorState extends State<Editor> {
   int? dragPageIndex;
   PointerDeviceKind? currentPointerKind;
   double? currentPressure;
+
+  /// Whether the pointer that started the current gesture was rejected as a
+  /// palm (a broad touch contact). See [stows.palmRejection].
+  bool currentPointerIsPalm = false;
   bool isDrawGesture(ScaleStartDetails details) {
     if (coreInfo.readOnly) return false;
 
@@ -520,10 +524,28 @@ class EditorState extends State<Editor> {
 
     if (currentTool == Tool.textEditing) {
       return false;
-    } else if (stows.editorFingerDrawing.value ||
+    }
+
+    if (currentPointerIsPalm) {
+      log.fine('Palm contact found, rejected stroke');
+      return false;
+    }
+
+    final isStylusInput =
         currentPointerKind == PointerDeviceKind.stylus ||
         currentPointerKind == PointerDeviceKind.invertedStylus ||
-        currentPressure != null) {
+        currentPressure != null;
+
+    if (stows.stylusOnlyInput.value) {
+      // Morisnote: finger gestures are navigation, only the pen inks.
+      if (!isStylusInput) {
+        log.fine('Stylus-only mode: finger is navigation');
+        return false;
+      }
+      return true;
+    }
+
+    if (stows.editorFingerDrawing.value || isStylusInput) {
       return true;
     } else {
       log.fine('Non-stylus found, rejected stroke');
@@ -810,9 +832,14 @@ class EditorState extends State<Editor> {
     });
   }
 
-  void updatePointerData(PointerDeviceKind kind, double? pressure) {
+  void updatePointerData(
+    PointerDeviceKind kind,
+    double? pressure, {
+    bool isPalm = false,
+  }) {
     currentPointerKind = kind;
     currentPressure = pressure;
+    currentPointerIsPalm = isPalm;
   }
 
   void onHovering() {

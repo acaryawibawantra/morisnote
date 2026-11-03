@@ -7,6 +7,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:keybinder/keybinder.dart';
+import 'package:logging/logging.dart';
 import 'package:saber/components/canvas/hud/canvas_hud.dart';
 import 'package:saber/components/canvas/interactive_canvas.dart';
 import 'package:saber/data/editor/page.dart';
@@ -50,7 +51,12 @@ class CanvasGestureDetector extends StatefulWidget {
 
   /// Called when the pressure of the stylus changes.
   /// The [pressure] value is normalized into a range of 0 to 1.
-  final void Function(PointerDeviceKind kind, double? pressure)
+  /// [isPalm] is true when a broad touch contact was rejected as a palm.
+  final void Function(
+    PointerDeviceKind kind,
+    double? pressure, {
+    bool isPalm,
+  })
   updatePointerData;
   final VoidCallback onHovering;
   final VoidCallback onHoveringEnd;
@@ -144,6 +150,8 @@ class CanvasGestureDetector extends StatefulWidget {
 }
 
 class CanvasGestureDetectorState extends State<CanvasGestureDetector> {
+  /// Morisnote: logs touch contact sizes for palm rejection tuning.
+  static final _log = Logger('CanvasGestureDetector');
   late var containerBounds = const BoxConstraints();
 
   /// If zooming is locked, this is the zoom level.
@@ -441,7 +449,31 @@ class CanvasGestureDetectorState extends State<CanvasGestureDetector> {
     } else {
       pressure = null;
     }
-    widget.updatePointerData(event.kind, pressure);
+
+    // Morisnote: palm rejection. A resting palm reports a much wider contact
+    // area than a fingertip, so anything wider than the threshold is treated
+    // as a palm and never draws. The measured size is logged so the threshold
+    // can be tuned from the in-app log viewer.
+    bool isPalm = false;
+    if (!isStylus &&
+        event.kind == PointerDeviceKind.touch &&
+        stows.palmRejection.value &&
+        (event is PointerDownEvent || event is PointerMoveEvent)) {
+      final contactSize = event.size.longestSide;
+      isPalm = contactSize >= _palmRejectionThreshold;
+      if (contactSize > 4) {
+        _log.fine(
+          'touch contact ${contactSize.toStringAsFixed(1)}px '
+          '(${isPalm ? 'palm' : 'finger'}, '
+          'threshold $_palmRejectionThreshold)',
+        );
+      }
+    } else if (event is PointerUpEvent) {
+      isPalm = _lastPointerWasPalm;
+    }
+    _lastPointerWasPalm = isPalm;
+
+    widget.updatePointerData(event.kind, pressure, isPalm: isPalm);
 
     if (isStylus &&
         stows.autoDisableFingerDrawingWhenStylusDetected.value &&
@@ -450,6 +482,12 @@ class CanvasGestureDetectorState extends State<CanvasGestureDetector> {
       stows.editorFingerDrawing.value = false;
     }
   }
+
+  /// Touch contacts wider than this (in logical pixels) count as a palm.
+  static const _palmRejectionThreshold = 25.0;
+
+  /// Whether the previous pointer event was rejected as a palm.
+  bool _lastPointerWasPalm = false;
 
   var stylusButtonWasPressed = false;
 
