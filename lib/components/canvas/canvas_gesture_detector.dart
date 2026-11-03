@@ -502,7 +502,6 @@ class CanvasGestureDetectorState extends State<CanvasGestureDetector> {
   static const _twoFingerTapTimeout = Duration(milliseconds: 500);
   static const _twoFingerTapSlop = 30.0;
   final Map<int, Offset> _tapPointers = {};
-  Offset? _tapAnchor;
   Timer? _twoFingerTapTimer;
   bool _twoFingerTapIsCandidate = false;
   bool _twoFingerTapHadTwoPointers = false;
@@ -514,7 +513,6 @@ class CanvasGestureDetectorState extends State<CanvasGestureDetector> {
       case PointerDownEvent():
         _tapPointers[event.pointer] = event.position;
         if (_tapPointers.length == 1) {
-          _tapAnchor = event.position;
           _twoFingerTapIsCandidate = true;
           _twoFingerTapHadTwoPointers = false;
           _twoFingerTapTimer?.cancel();
@@ -551,7 +549,6 @@ class CanvasGestureDetectorState extends State<CanvasGestureDetector> {
     _twoFingerTapTimer?.cancel();
     _twoFingerTapTimer = null;
     _tapPointers.clear();
-    _tapAnchor = null;
     _twoFingerTapIsCandidate = false;
     _twoFingerTapHadTwoPointers = false;
   }

@@ -502,7 +502,7 @@ class EditorState extends State<Editor> {
   /// Morisnote: true when [stroke] looks like a quick back-and-forth scribble
   /// rather than handwriting or hatching.
   bool _isScribble(Stroke stroke) {
-    final pts = stroke.points;
+    final pts = stroke.lowQualityPolygon;
     if (pts.length < 8) return false;
 
     double minX = double.infinity, minY = double.infinity;
@@ -535,12 +535,12 @@ class EditorState extends State<Editor> {
   }
 
   /// Morisnote: deletes every stroke on [page] that the scribble crosses.
-  List<Stroke> _eraseStrokesCrossedBy(Stroke scribble, Page page) {
+  List<Stroke> _eraseStrokesCrossedBy(Stroke scribble, EditorPage page) {
     int cell(Offset p) => ((p.dx / _scribbleCellSize).floor() << 20) ^
         ((p.dy / _scribbleCellSize).floor() & 0xFFFFF);
 
     final cells = <int>{};
-    for (final p in scribble.points) {
+    for (final p in scribble.lowQualityPolygon) {
       cells.add(cell(p));
     }
 
