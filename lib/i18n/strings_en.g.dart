@@ -78,8 +78,8 @@ class Translations$home$en {
 	late final Translations$home$tooltips$en tooltips = Translations$home$tooltips$en.internal(_root);
 	late final Translations$home$create$en create = Translations$home$create$en.internal(_root);
 
-	/// en: 'Welcome to Saber'
-	String get welcome => 'Welcome to Saber';
+	/// en: 'Welcome to Morisnote'
+	String get welcome => 'Welcome to Morisnote';
 
 	/// en: 'The file you selected is not supported. Please select an sbn, sbn2, sba, or pdf file.'
 	String get invalidFormat => 'The file you selected is not supported. Please select an sbn, sbn2, sba, or pdf file.';
@@ -148,8 +148,8 @@ class Translations$settings$en {
 	/// en: 'Resync everything'
 	String get resyncEverything => 'Resync everything';
 
-	/// en: 'Open Saber folder'
-	String get openDataDir => 'Open Saber folder';
+	/// en: 'Open Morisnote folder'
+	String get openDataDir => 'Open Morisnote folder';
 
 	late final Translations$settings$customDataDir$en customDataDir = Translations$settings$customDataDir$en.internal(_root);
 
@@ -611,8 +611,8 @@ class Translations$sentry$consent$en {
 
 	// Translations
 
-	/// en: 'Help improve Saber?'
-	String get title => 'Help improve Saber?';
+	/// en: 'Help improve Morisnote?'
+	String get title => 'Help improve Morisnote?';
 
 	late final Translations$sentry$consent$description$en description = Translations$sentry$consent$description$en.internal(_root);
 	late final Translations$sentry$consent$answers$en answers = Translations$sentry$consent$answers$en.internal(_root);
@@ -668,8 +668,8 @@ class Translations$settings$prefLabels$en {
 	/// en: 'Atkinson Hyperlegible font'
 	String get hyperlegibleFont => 'Atkinson Hyperlegible font';
 
-	/// en: 'Check for Saber updates'
-	String get shouldCheckForUpdates => 'Check for Saber updates';
+	/// en: 'Check for Morisnote updates'
+	String get shouldCheckForUpdates => 'Check for Morisnote updates';
 
 	/// en: 'Faster updates'
 	String get shouldAlwaysAlertForUpdates => 'Faster updates';
@@ -725,8 +725,8 @@ class Translations$settings$prefLabels$en {
 	/// en: 'Auto straighten lines'
 	String get autoStraightenLines => 'Auto straighten lines';
 
-	/// en: 'Custom Saber folder'
-	String get customDataDir => 'Custom Saber folder';
+	/// en: 'Custom Morisnote folder'
+	String get customDataDir => 'Custom Morisnote folder';
 
 	/// en: 'Error reporting'
 	String get sentry => 'Error reporting';
@@ -743,8 +743,8 @@ class Translations$settings$prefDescriptions$en {
 	/// en: 'Increases legibility for users with low vision'
 	String get hyperlegibleFont => 'Increases legibility for users with low vision';
 
-	/// en: '(Not recommended) Allow Saber to connect to servers with self-signed/untrusted certificates'
-	String get allowInsecureConnections => '(Not recommended) Allow Saber to connect to servers with self-signed/untrusted certificates';
+	/// en: '(Not recommended) Allow Morisnote to connect to servers with self-signed/untrusted certificates'
+	String get allowInsecureConnections => '(Not recommended) Allow Morisnote to connect to servers with self-signed/untrusted certificates';
 
 	/// en: 'For e-ink displays'
 	String get preferGreyscale => 'For e-ink displays';
@@ -1353,8 +1353,8 @@ class Translations$editor$versionTooNew$en {
 
 	// Translations
 
-	/// en: 'This note was edited using a newer version of Saber'
-	String get title => 'This note was edited using a newer version of Saber';
+	/// en: 'This note was edited using a newer version of Morisnote'
+	String get title => 'This note was edited using a newer version of Morisnote';
 
 	/// en: 'Editing this note may result in some information being lost. Do you want to ignore this and edit it anyway?'
 	String get subtitle => 'Editing this note may result in some information being lost. Do you want to ignore this and edit it anyway?';

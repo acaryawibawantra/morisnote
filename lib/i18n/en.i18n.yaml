@@ -20,7 +20,7 @@ home:
   create:
     newNote: New note
     importNote: Import note
-  welcome: Welcome to Saber
+  welcome: Welcome to Morisnote
   invalidFormat: The file you selected is not supported. Please select an sbn, sbn2, sba, or pdf file.
   noFiles: No files found
   noPreviewAvailable: No preview available
@@ -81,7 +81,7 @@ home:
     simpleGrid: Simple grid
 sentry:
   consent:
-    title: Help improve Saber?
+    title: Help improve Morisnote?
     description:
       question: Would you like to automatically report unexpected errors? This helps me identify and fix issues faster.
       scope: The reports may contain information about the error and your device. I've made every effort to filter out personal data but some may remain.
@@ -106,7 +106,7 @@ settings:
     layoutSize: Layout type
     customAccentColor: Custom accent color
     hyperlegibleFont: Atkinson Hyperlegible font
-    shouldCheckForUpdates: Check for Saber updates
+    shouldCheckForUpdates: Check for Morisnote updates
     shouldAlwaysAlertForUpdates: Faster updates
     allowInsecureConnections: Allow insecure connections
     editorToolbarAlignment: Toolbar position
@@ -125,11 +125,11 @@ settings:
     autosave: Auto-save
     shapeRecognitionDelay: Shape recognition delay
     autoStraightenLines: Auto straighten lines
-    customDataDir: Custom Saber folder
+    customDataDir: Custom Morisnote folder
     sentry: Error reporting
   prefDescriptions:
     hyperlegibleFont: Increases legibility for users with low vision
-    allowInsecureConnections: (Not recommended) Allow Saber to connect to servers with self-signed/untrusted certificates
+    allowInsecureConnections: (Not recommended) Allow Morisnote to connect to servers with self-signed/untrusted certificates
     preferGreyscale: For e-ink displays
     autoClearWhiteboardOnExit: Clears the whiteboard after you exit the app
     disableEraserAfterUse: Automatically switches back to the pen after using the eraser
@@ -170,7 +170,7 @@ settings:
     title: Reset this setting?
     button: Reset
   resyncEverything: Resync everything
-  openDataDir: Open Saber folder
+  openDataDir: Open Morisnote folder
   customDataDir:
     cancel: Cancel
     select: Select
@@ -363,7 +363,7 @@ editor:
     watchingServer: You are currently watching for updates on the server. Editing is disabled in this mode.
     corrupted: Failed to load note. It may be corrupted or still being downloaded.
   versionTooNew:
-    title: This note was edited using a newer version of Saber
+    title: This note was edited using a newer version of Morisnote
     subtitle: Editing this note may result in some information being lost. Do you want to ignore this and edit it anyway?
     allowEditing: Allow editing
   quill:
