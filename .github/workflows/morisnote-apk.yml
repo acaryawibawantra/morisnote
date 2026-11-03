@@ -132,9 +132,8 @@ jobs:
         run: |
           set -euo pipefail
           APK=$(ls output/*.apk | head -1)
-          cp "$APK" output/Morisnote.apk
           gh release delete latest --yes --cleanup-tag -R "$GITHUB_REPOSITORY" || true
-          gh release create latest output/Morisnote.apk \
+          gh release create latest "$APK" \
             -R "$GITHUB_REPOSITORY" \
             --target "$GITHUB_SHA" \
             --title "Morisnote — build terbaru" \
