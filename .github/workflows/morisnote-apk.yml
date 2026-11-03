@@ -13,6 +13,8 @@ jobs:
     name: Build signed APK
     runs-on: ubuntu-latest
     timeout-minutes: 90
+    permissions:
+      contents: write
     steps:
       - name: Free up disk space
         run: |
@@ -123,3 +125,19 @@ jobs:
           path: output/*.apk
           if-no-files-found: error
           retention-days: 90
+
+      - name: Publish to the rolling "latest" release (download link for the tablet)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          APK=$(ls output/*.apk | head -1)
+          cp "$APK" output/Morisnote.apk
+          gh release delete latest --yes --cleanup-tag -R "$GITHUB_REPOSITORY" || true
+          gh release create latest output/Morisnote.apk \
+            -R "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "Morisnote — build terbaru" \
+            --notes "APK arm64 untuk sideload di tablet. Build #${{ github.run_number }}, commit ${GITHUB_SHA:0:7}. Pasang di atas build sebelumnya (tanda tangan sama, catatan aman)." \
+            --prerelease
+          echo "Download: https://github.com/$GITHUB_REPOSITORY/releases/latest"

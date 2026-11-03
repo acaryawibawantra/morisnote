@@ -43,6 +43,28 @@
 > Modifications in this fork are made by **Hermes Agent** (Nous Research) under
 > the direction of I Dewa Nyoman Acarya Wibawantra. Upstream Saber is by
 > Adil Hanney and contributors; see [LICENSE.md](LICENSE.md).
+>
+> ### Download APK
+>
+> **[⬇️ Unduh build terbaru (APK arm64)](../../releases/latest)**
+>
+> Cara pasang di tablet (Xiaomi Pad):
+> 1. Buka tautan di atas di browser tablet (perlu login GitHub karena repo ini
+>    privat), unduh `Morisnote.apk`.
+> 2. Buka File Manager → ketuk APK → izinkan **"Install unknown apps"** bila
+>    diminta.
+> 3. Pasang. Build berikutnya bisa dipasang **di atas** build lama (tanda tangan
+>    sama) tanpa kehilangan catatan — jangan uninstall dulu.
+>
+> ### What this fork adds
+>
+> - **18 paper templates** (upstream has 9): graph paper, isometric, hexagon,
+>   weekly planner, daily planner, checklist, storyboard, calligraphy guides,
+>   half lined, on top of the existing ones.
+> - **Stylus-only drawing**: the pen always inks, the finger always pans/zooms.
+> - **Palm rejection**: touch contacts wider than a threshold never draw.
+> - **Voice notes per page** (in progress): record, play back, and time-stamp
+>   strokes against the recording.
 
 Saber is the notes app built for handwriting.
 

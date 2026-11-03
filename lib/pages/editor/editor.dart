@@ -23,6 +23,7 @@ import 'package:saber/components/canvas/canvas_image.dart';
 import 'package:saber/components/canvas/image/editor_image.dart';
 import 'package:saber/components/canvas/save_indicator.dart';
 import 'package:saber/components/editor/read_only_banner.dart';
+import 'package:saber/components/editor/recording_sheet.dart';
 import 'package:saber/components/theming/adaptive_alert_dialog.dart';
 import 'package:saber/components/theming/adaptive_icon.dart';
 import 'package:saber/components/theming/dynamic_material_app.dart';
@@ -120,6 +121,11 @@ class EditorState extends State<Editor> {
   }
 
   var history = EditorHistory();
+
+  /// Morisnote: wall clock time (ms since epoch) when the current voice
+  /// recording started, or null when not recording. New strokes are stamped
+  /// with the elapsed time so playback can jump to them.
+  int? _recordingStartEpochMs;
 
   late bool needsNaming = widget.needsNaming && stows.editorPromptRename.value;
 
@@ -771,6 +777,13 @@ class EditorState extends State<Editor> {
         }
 
         createPage(newStroke.pageIndex);
+        // Morisnote: remember when this stroke was drawn relative to the
+        // voice recording that was running, so playback can jump to it later.
+        final recordingStart = _recordingStartEpochMs;
+        if (recordingStart != null) {
+          newStroke.timestampMs =
+              DateTime.now().millisecondsSinceEpoch - recordingStart;
+        }
         page.insertStroke(newStroke);
         history.recordChange(HistoricAdd(strokes: [newStroke], images: []));
       } else if (currentTool is Eraser) {
@@ -1767,6 +1780,39 @@ class EditorState extends State<Editor> {
                   triggerSave: saveToFile,
                 ),
                 actions: [
+                  IconButton(
+                    icon: const AdaptiveIcon(
+                      icon: Icons.mic_none,
+                      cupertinoIcon: CupertinoIcons.mic,
+                    ),
+                    tooltip: 'Rekaman suara',
+                    onPressed: () {
+                      final page = coreInfo.pages[currentPageIndex];
+                      showDialog(
+                        context: context,
+                        builder: (dialogContext) => AdaptiveAlertDialog(
+                          title: const Text('Rekaman halaman ini'),
+                          content: RecordingSheet(
+                            notePath: coreInfo.filePath,
+                            recordings: page.recordings,
+                            onChanged: () {
+                              saveToFile();
+                              setState(() {});
+                            },
+                            onRecordingStarted: (startEpochMs) {
+                              _recordingStartEpochMs = startEpochMs;
+                            },
+                          ),
+                          actions: [
+                            CupertinoDialogAction(
+                              onPressed: () => Navigator.of(dialogContext).pop(),
+                              child: const Text('OK'),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
                   IconButton(
                     icon: const AdaptiveIcon(
                       icon: Icons.insert_page_break,

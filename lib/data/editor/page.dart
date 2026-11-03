@@ -11,6 +11,7 @@ import 'package:saber/components/canvas/image/editor_image.dart';
 import 'package:saber/components/canvas/inner_canvas.dart';
 import 'package:saber/components/canvas/pencil_shader.dart';
 import 'package:saber/data/editor/editor_exporter.dart';
+import 'package:saber/data/editor/note_recording.dart';
 import 'package:saber/data/tools/laser_pointer.dart';
 import 'package:sbn/has_size.dart';
 
@@ -48,6 +49,10 @@ class EditorPage extends ChangeNotifier implements HasSize {
   final List<LaserStroke> laserStrokes;
   final List<EditorImage> images;
   final QuillStruct quill;
+
+  /// Morisnote: voice recordings attached to this page. The audio files are
+  /// sidecar files next to the note, see [NoteRecording].
+  final List<NoteRecording> recordings;
 
   EditorImage? backgroundImage;
 
@@ -107,6 +112,7 @@ class EditorPage extends ChangeNotifier implements HasSize {
     List<Stroke>? strokes,
     List<EditorImage>? images,
     QuillStruct? quill,
+    List<NoteRecording>? recordings,
     this.backgroundImage,
   }) : assert(
          (size == null) || (width == null && height == null),
@@ -116,6 +122,7 @@ class EditorPage extends ChangeNotifier implements HasSize {
        strokes = strokes ?? [],
        laserStrokes = [],
        images = images ?? [],
+       recordings = recordings ?? [],
        quill =
            quill ??
            QuillStruct(
@@ -157,6 +164,7 @@ class EditorPage extends ChangeNotifier implements HasSize {
             : QuillController.basic(),
         focusNode: FocusNode(debugLabel: 'Quill Focus Node'),
       ),
+      recordings: NoteRecording.listFromJson(json['a'] as List?),
       backgroundImage: json['b'] != null
           ? parseImageJson(
               json['b'],
@@ -178,6 +186,8 @@ class EditorPage extends ChangeNotifier implements HasSize {
       'i': images.map((image) => image.toJson(assets)).toList(),
     if (!quill.controller.document.isEmpty())
       'q': quill.controller.document.toDelta().toJson(),
+    if (recordings.isNotEmpty)
+      'a': recordings.map((recording) => recording.toJson()).toList(),
     if (backgroundImage != null) 'b': backgroundImage?.toJson(assets),
   };
 
@@ -309,12 +319,14 @@ class EditorPage extends ChangeNotifier implements HasSize {
     List<Stroke>? strokes,
     List<EditorImage>? images,
     QuillStruct? quill,
+    List<NoteRecording>? recordings,
     EditorImage? backgroundImage,
   }) => EditorPage(
     size: size ?? this.size,
     strokes: strokes ?? this.strokes,
     images: images ?? this.images,
     quill: quill ?? this.quill,
+    recordings: recordings ?? this.recordings,
     backgroundImage: backgroundImage ?? this.backgroundImage,
   );
 

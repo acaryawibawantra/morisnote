@@ -48,6 +48,10 @@ dependencies:
 
   perfect_freehand: ^2.5.1
 
+  # Morisnote: voice notes (record + playback)
+  record: ^7.1.2
+  just_audio: ^0.10.6
+
   path_provider: ^2.0.11
 
   flutter_secure_storage: ^11.0.0

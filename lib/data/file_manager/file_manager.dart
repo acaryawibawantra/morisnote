@@ -40,7 +40,7 @@ class FileManager {
 
   /// A regex that matches the file names/paths of asset files,
   /// including previews, e.g. `mynote.sbn2.1`.
-  static final assetFileRegex = RegExp(r'\.sbn2?\.[\dp]+$');
+  static final assetFileRegex = RegExp(r'\.sbn2?\.([\dp]+|a\d+)$');
 
   /// Forbidden names for files and directories (on any/all platforms).
   /// These patterns match the base name only (not the full path).
@@ -425,6 +425,11 @@ class FileManager {
           assets.add(assetNumber);
         }
       }
+      // Morisnote: voice recording sidecars (`<note>.a0`, `<note>.a1`, ...)
+      for (int index = 0; true; index++) {
+        if (!getFile('$fromPath.a$index').existsSync()) break;
+        assets.add('a$index');
+      }
 
       await Future.wait([
         for (final assetNumber in assets)
@@ -472,6 +477,9 @@ class FileManager {
           deleteFile('$filePath.$assetNumber', alsoDeleteAssets: false),
         if (previewFile.existsSync())
           deleteFile('$filePath.p', alsoDeleteAssets: false),
+        // Morisnote: voice recording sidecars
+        for (int index = 0; getFile('$filePath.a$index').existsSync(); index++)
+          deleteFile('$filePath.a$index', alsoDeleteAssets: false),
       ]);
     }
   }

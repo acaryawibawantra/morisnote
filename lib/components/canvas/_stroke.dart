@@ -34,6 +34,10 @@ class Stroke {
   bool pressureEnabled;
   final StrokeOptions options;
 
+  /// Morisnote: milliseconds since the start of the voice recording that was
+  /// running while this stroke was drawn, or null if nothing was recording.
+  int? timestampMs;
+
   List<Offset>? _lowQualityPolygon, _highQualityPolygon;
   List<Offset> get lowQualityPolygon =>
       _lowQualityPolygon ??= getPolygon(quality: .low);
@@ -148,7 +152,11 @@ class Stroke {
       pageIndex: pageIndex,
       page: page,
       toolId: toolId,
-    )..points.addAll(points);
+    )..points.addAll(points)
+     ..timestampMs = switch (json['ts']) {
+       final int value => value,
+       _ => null,
+     };
   }
   Map<String, dynamic> toJson() {
     // these json keys should not be the same as the ones in [StrokeOptions.toJson]
@@ -162,6 +170,7 @@ class Stroke {
       'ty': toolId.id,
       'pe': pressureEnabled,
       'c': color.toARGB32(),
+      if (timestampMs != null) 'ts': timestampMs,
     }..addAll(options.toJson());
   }
 
