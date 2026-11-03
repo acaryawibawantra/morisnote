@@ -465,6 +465,24 @@ class EditorState extends State<Editor> {
     autosaveAfterDelay();
   }
 
+  /// Morisnote: two-finger tap → remove the most recently drawn stroke.
+  ///
+  /// Only acts when the last change in the history is a stroke (or strokes),
+  /// so a two-finger tap can never delete a page or undo something unrelated.
+  void undoLastStroke() {
+    if (coreInfo.readOnly) return;
+    if (!history.canUndo) return;
+
+    final lastChange = history.peekUndo();
+    if (lastChange is! HistoricAdd || lastChange.strokes.isEmpty) {
+      log.fine('Two-finger tap ignored: last change is not a stroke');
+      return;
+    }
+
+    undo();
+    setState(() {});
+  }
+
   void redo() {
     if (!history.canRedo) return;
     final historic = history.redo();
@@ -1501,6 +1519,7 @@ class EditorState extends State<Editor> {
       onHovering: onHovering,
       onHoveringEnd: onHoveringEnd,
       onStylusButtonChanged: onStylusButtonChanged,
+      onTwoFingerTap: undoLastStroke,
       updatePointerData: updatePointerData,
       undo: undo,
       redo: redo,

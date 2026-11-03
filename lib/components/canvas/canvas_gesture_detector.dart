@@ -30,6 +30,7 @@ class CanvasGestureDetector extends StatefulWidget {
     required this.onHovering,
     required this.onHoveringEnd,
     required this.onStylusButtonChanged,
+    this.onTwoFingerTap,
     required this.undo,
     required this.redo,
     required this.pages,
@@ -61,6 +62,10 @@ class CanvasGestureDetector extends StatefulWidget {
   final VoidCallback onHovering;
   final VoidCallback onHoveringEnd;
   final ValueChanged<bool> onStylusButtonChanged;
+
+  /// Morisnote: called when the screen is tapped with two fingers, used to
+  /// undo the most recently drawn stroke.
+  final VoidCallback? onTwoFingerTap;
 
   final VoidCallback undo;
   final VoidCallback redo;
@@ -427,6 +432,10 @@ class CanvasGestureDetectorState extends State<CanvasGestureDetector> {
   }
 
   void _listenerPointerEvent(PointerEvent event) {
+    if (event.kind == PointerDeviceKind.touch) {
+      _trackTwoFingerTap(event);
+    }
+
     final isStylus =
         event.kind == PointerDeviceKind.stylus ||
         event.kind == PointerDeviceKind.invertedStylus;
@@ -488,6 +497,64 @@ class CanvasGestureDetectorState extends State<CanvasGestureDetector> {
 
   /// Whether the previous pointer event was rejected as a palm.
   bool _lastPointerWasPalm = false;
+
+  /// Morisnote: two-finger tap (undo last stroke) detection state.
+  static const _twoFingerTapTimeout = Duration(milliseconds: 350);
+  static const _twoFingerTapSlop = 24.0;
+  final Map<int, Offset> _tapPointers = {};
+  Offset? _tapAnchor;
+  Timer? _twoFingerTapTimer;
+  bool _twoFingerTapIsCandidate = false;
+  bool _twoFingerTapHadTwoPointers = false;
+
+  /// Detects a quick two-finger tap so [CanvasGestureDetector.onTwoFingerTap]
+  /// can undo the last stroke. A pinch (fingers moving apart) cancels it.
+  void _trackTwoFingerTap(PointerEvent event) {
+    switch (event) {
+      case PointerDownEvent():
+        _tapPointers[event.pointer] = event.position;
+        if (_tapPointers.length == 1) {
+          _tapAnchor = event.position;
+          _twoFingerTapIsCandidate = true;
+          _twoFingerTapHadTwoPointers = false;
+          _twoFingerTapTimer?.cancel();
+          _twoFingerTapTimer = Timer(_twoFingerTapTimeout, _resetTwoFingerTap);
+        } else if (_tapPointers.length == 2 && _twoFingerTapIsCandidate) {
+          _twoFingerTapHadTwoPointers = true;
+        } else if (_tapPointers.length > 2) {
+          _resetTwoFingerTap();
+        }
+      case PointerMoveEvent():
+        final anchor = _tapAnchor;
+        if (_twoFingerTapIsCandidate &&
+            anchor != null &&
+            (event.position - anchor).distance > _twoFingerTapSlop) {
+          _resetTwoFingerTap();
+        }
+      case PointerCancelEvent():
+        _tapPointers.remove(event.pointer);
+        _resetTwoFingerTap();
+      case PointerUpEvent():
+        _tapPointers.remove(event.pointer);
+        if (_tapPointers.isEmpty) {
+          final shouldUndo =
+              _twoFingerTapIsCandidate && _twoFingerTapHadTwoPointers;
+          _resetTwoFingerTap();
+          if (shouldUndo) widget.onTwoFingerTap?.call();
+        }
+      default:
+        break;
+    }
+  }
+
+  void _resetTwoFingerTap() {
+    _twoFingerTapTimer?.cancel();
+    _twoFingerTapTimer = null;
+    _tapPointers.clear();
+    _tapAnchor = null;
+    _twoFingerTapIsCandidate = false;
+    _twoFingerTapHadTwoPointers = false;
+  }
 
   var stylusButtonWasPressed = false;
 
@@ -605,6 +672,7 @@ class CanvasGestureDetectorState extends State<CanvasGestureDetector> {
 
   @override
   void dispose() {
+    _twoFingerTapTimer?.cancel();
     CanvasTransformCache.add(
       widget.filePath,
       widget._transformationController.value,
