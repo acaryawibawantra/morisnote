@@ -499,8 +499,8 @@ class CanvasGestureDetectorState extends State<CanvasGestureDetector> {
   bool _lastPointerWasPalm = false;
 
   /// Morisnote: two-finger tap (undo last stroke) detection state.
-  static const _twoFingerTapTimeout = Duration(milliseconds: 350);
-  static const _twoFingerTapSlop = 24.0;
+  static const _twoFingerTapTimeout = Duration(milliseconds: 500);
+  static const _twoFingerTapSlop = 30.0;
   final Map<int, Offset> _tapPointers = {};
   Offset? _tapAnchor;
   Timer? _twoFingerTapTimer;
@@ -525,10 +525,10 @@ class CanvasGestureDetectorState extends State<CanvasGestureDetector> {
           _resetTwoFingerTap();
         }
       case PointerMoveEvent():
-        final anchor = _tapAnchor;
+        final start = _tapPointers[event.pointer];
         if (_twoFingerTapIsCandidate &&
-            anchor != null &&
-            (event.position - anchor).distance > _twoFingerTapSlop) {
+            start != null &&
+            (event.position - start).distance > _twoFingerTapSlop) {
           _resetTwoFingerTap();
         }
       case PointerCancelEvent():
@@ -582,6 +582,9 @@ class CanvasGestureDetectorState extends State<CanvasGestureDetector> {
   }
 
   void _listenerPointerUpEvent(PointerEvent event) {
+    if (event.kind == PointerDeviceKind.touch) {
+      _trackTwoFingerTap(event);
+    }
     widget.updatePointerData(event.kind, null);
     if (stylusButtonWasPressed) {
       stylusButtonWasPressed = false;

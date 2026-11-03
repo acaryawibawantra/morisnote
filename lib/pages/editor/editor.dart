@@ -127,6 +127,16 @@ class EditorState extends State<Editor> {
   /// with the elapsed time so playback can jump to them.
   int? _recordingStartEpochMs;
 
+  /// Morisnote: the last stroke the user drew, so a two-finger tap can delete
+  /// exactly that stroke (and nothing else).
+  Stroke? _lastDrawnStroke;
+
+  /// Morisnote: scribble-to-erase tuning.
+  static const _scribbleMinExtent = 48.0;
+  static const _scribbleMaxExtent = 1400.0;
+  static const _scribbleMinReversals = 4;
+  static const _scribbleCellSize = 16.0;
+
   late bool needsNaming = widget.needsNaming && stows.editorPromptRename.value;
 
   late Tool _currentTool = () {
@@ -466,21 +476,104 @@ class EditorState extends State<Editor> {
   }
 
   /// Morisnote: two-finger tap → remove the most recently drawn stroke.
-  ///
-  /// Only acts when the last change in the history is a stroke (or strokes),
-  /// so a two-finger tap can never delete a page or undo something unrelated.
   void undoLastStroke() {
     if (coreInfo.readOnly) return;
-    if (!history.canUndo) return;
 
-    final lastChange = history.peekUndo();
-    if (lastChange is! HistoricAdd || lastChange.strokes.isEmpty) {
-      log.fine('Two-finger tap ignored: last change is not a stroke');
+    final stroke = _lastDrawnStroke;
+    if (stroke == null) {
+      log.fine('Two-finger tap ignored: nothing drawn yet');
       return;
     }
+    _lastDrawnStroke = null;
 
-    undo();
-    setState(() {});
+    if (stroke.pageIndex < 0 || stroke.pageIndex >= coreInfo.pages.length) {
+      return;
+    }
+    final page = coreInfo.pages[stroke.pageIndex];
+    if (!page.strokes.contains(stroke)) return;
+
+    setState(() {
+      page.strokes.remove(stroke);
+    });
+    history.recordChange(HistoricDelete(strokes: [stroke], images: []));
+    autosaveAfterDelay();
+  }
+
+  /// Morisnote: true when [stroke] looks like a quick back-and-forth scribble
+  /// rather than handwriting or hatching.
+  bool _isScribble(Stroke stroke) {
+    final pts = stroke.points;
+    if (pts.length < 8) return false;
+
+    double minX = double.infinity, minY = double.infinity;
+    double maxX = -double.infinity, maxY = -double.infinity;
+    for (final p in pts) {
+      if (p.dx < minX) minX = p.dx;
+      if (p.dx > maxX) maxX = p.dx;
+      if (p.dy < minY) minY = p.dy;
+      if (p.dy > maxY) maxY = p.dy;
+    }
+    final width = maxX - minX;
+    final height = maxY - minY;
+    if (width < _scribbleMinExtent || height < _scribbleMinExtent) {
+      return false;
+    }
+    if (width > _scribbleMaxExtent || height > _scribbleMaxExtent) return false;
+
+    // Count how often the movement flips direction along the wider axis.
+    final trackX = width >= height;
+    int reversals = 0;
+    int? lastSign;
+    for (int i = 1; i < pts.length; i++) {
+      final delta = trackX ? pts[i].dx - pts[i - 1].dx : pts[i].dy - pts[i - 1].dy;
+      if (delta.abs() < 1.5) continue;
+      final sign = delta > 0 ? 1 : -1;
+      if (lastSign != null && sign != lastSign) reversals++;
+      lastSign = sign;
+    }
+    return reversals >= _scribbleMinReversals;
+  }
+
+  /// Morisnote: deletes every stroke on [page] that the scribble crosses.
+  List<Stroke> _eraseStrokesCrossedBy(Stroke scribble, Page page) {
+    int cell(Offset p) => ((p.dx / _scribbleCellSize).floor() << 20) ^
+        ((p.dy / _scribbleCellSize).floor() & 0xFFFFF);
+
+    final cells = <int>{};
+    for (final p in scribble.points) {
+      cells.add(cell(p));
+    }
+
+    bool crossedBy(Offset p) {
+      final cx = (p.dx / _scribbleCellSize).floor();
+      final cy = (p.dy / _scribbleCellSize).floor();
+      for (int dx = -1; dx <= 1; dx++) {
+        for (int dy = -1; dy <= 1; dy++) {
+          if (cells.contains(((cx + dx) << 20) ^ ((cy + dy) & 0xFFFFF))) {
+            return true;
+          }
+        }
+      }
+      return false;
+    }
+
+    final erased = <Stroke>[];
+    for (final stroke in page.strokes.toList()) {
+      if (identical(stroke, scribble)) continue;
+      final polygon = stroke.lowQualityPolygon;
+      for (int i = 0; i < polygon.length; i += 2) {
+        if (crossedBy(polygon[i])) {
+          erased.add(stroke);
+          break;
+        }
+      }
+    }
+
+    for (final stroke in erased) {
+      page.strokes.remove(stroke);
+      if (identical(stroke, _lastDrawnStroke)) _lastDrawnStroke = null;
+    }
+    return erased;
   }
 
   void redo() {
@@ -795,6 +888,20 @@ class EditorState extends State<Editor> {
         }
 
         createPage(newStroke.pageIndex);
+        // Morisnote: scribble-to-erase — a quick back-and-forth scribble
+        // deletes everything it crosses instead of being drawn.
+        if (stows.scribbleToErase.value && _isScribble(newStroke)) {
+          final targetPage = coreInfo.pages[newStroke.pageIndex];
+          final erased = _eraseStrokesCrossedBy(newStroke, targetPage);
+          if (erased.isNotEmpty) {
+            history.recordChange(
+              HistoricDelete(strokes: erased, images: []),
+            );
+            autosaveAfterDelay();
+          }
+          return;
+        }
+
         // Morisnote: remember when this stroke was drawn relative to the
         // voice recording that was running, so playback can jump to it later.
         final recordingStart = _recordingStartEpochMs;
@@ -803,6 +910,7 @@ class EditorState extends State<Editor> {
               DateTime.now().millisecondsSinceEpoch - recordingStart;
         }
         page.insertStroke(newStroke);
+        _lastDrawnStroke = newStroke;
         history.recordChange(HistoricAdd(strokes: [newStroke], images: []));
       } else if (currentTool is Eraser) {
         final erased = (currentTool as Eraser).onDragEnd();

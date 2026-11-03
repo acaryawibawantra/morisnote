@@ -435,6 +435,14 @@ class _SettingsPageState extends State<SettingsPage> {
                   icon: CupertinoIcons.hand_point_left,
                   pref: stows.palmRejection,
                 ),
+                SettingsSwitch(
+                  title: 'Scribble to erase',
+                  subtitle:
+                      'Scribble quickly over strokes to delete them. '
+                      'Tap with two fingers to undo the last stroke.',
+                  icon: CupertinoIcons.scribble,
+                  pref: stows.scribbleToErase,
+                ),
 
                 SettingsSubtitle(subtitle: t.settings.prefCategories.editor),
                 SettingsSelection(

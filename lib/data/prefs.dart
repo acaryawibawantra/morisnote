@@ -225,6 +225,14 @@ class Stows {
     volatile: !_isOnMainIsolate,
   );
 
+  /// Morisnote: erase strokes by scribbling over them, like GoodNotes'
+  /// scribble-to-erase. Off-switch lives in Settings → Editor.
+  final scribbleToErase = PlainStow(
+    'scribbleToErase',
+    true,
+    volatile: !_isOnMainIsolate,
+  );
+
   final recentColorsChronological = PlainStow(
     'recentColorsChronological',
     <String>[],
