@@ -1037,12 +1037,10 @@ class EditorState extends State<Editor> {
           }
         }
 
-        // Morisnote: remember when this stroke was drawn relative to the
-        // voice recording that was running, so playback can jump to it later.
-        final recordingStart = _recordingStartEpochMs;
-        if (recordingStart != null) {
-          newStroke.timestampMs =
-              DateTime.now().millisecondsSinceEpoch - recordingStart;
+        // Morisnote: stamp the wall-clock time the stroke was drawn while a
+        // recording is running, so playback can jump to that moment later.
+        if (_recordingStartEpochMs != null) {
+          newStroke.timestampMs = DateTime.now().millisecondsSinceEpoch;
         }
         page.insertStroke(newStroke);
         _lastDrawnStroke = newStroke;
@@ -2095,6 +2093,9 @@ class EditorState extends State<Editor> {
                           content: RecordingSheet(
                             notePath: coreInfo.filePath,
                             recordings: page.recordings,
+                            strokes: page.strokes
+                                .where((stroke) => stroke.timestampMs != null)
+                                .toList(),
                             onChanged: () {
                               saveToFile();
                               setState(() {});

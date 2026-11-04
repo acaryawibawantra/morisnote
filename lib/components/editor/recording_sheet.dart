@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:logging/logging.dart';
 import 'package:record/record.dart';
+import 'package:saber/components/canvas/_stroke.dart';
 import 'package:saber/data/editor/note_recording.dart';
 import 'package:saber/data/file_manager/file_manager.dart';
 
@@ -17,6 +18,7 @@ class RecordingSheet extends StatefulWidget {
     super.key,
     required this.notePath,
     required this.recordings,
+    required this.strokes,
     required this.onChanged,
     required this.onRecordingStarted,
   });
@@ -25,6 +27,9 @@ class RecordingSheet extends StatefulWidget {
 
   /// The recordings of the current page. Modified in place.
   final List<NoteRecording> recordings;
+
+  /// Strokes on this page that were drawn while a recording was running.
+  final List<Stroke> strokes;
 
   /// Called after a recording was added or deleted, so the note can be saved.
   final VoidCallback onChanged;
@@ -134,7 +139,9 @@ class _RecordingSheetState extends State<RecordingSheet> {
             durationMs: durationMs,
           ),
         );
-        widget.recordings.sort((a, b) => a.startEpochMs.compareTo(b.startEpochMs));
+        widget.recordings.sort(
+          (a, b) => a.startEpochMs.compareTo(b.startEpochMs),
+        );
         widget.onChanged();
       } else {
         _log.info('Discarded too-short recording at $path');
@@ -187,6 +194,38 @@ class _RecordingSheetState extends State<RecordingSheet> {
     }
     widget.onChanged();
     if (mounted) setState(() {});
+  }
+
+  /// Morisnote: jump into the recording at the moment the stroke was drawn.
+  Future<void> _playFromStroke(Stroke stroke) async {
+    final drawnAt = stroke.timestampMs;
+    if (drawnAt == null) return;
+
+    NoteRecording? match;
+    var offsetMs = 0;
+    for (final recording in widget.recordings) {
+      final start = recording.startEpochMs;
+      if (drawnAt >= start && drawnAt <= start + recording.durationMs + 2000) {
+        match = recording;
+        offsetMs = drawnAt - start;
+        break;
+      }
+    }
+    if (match == null) {
+      _showMessage('Coretan ini tidak jatuh di dalam rekaman mana pun.');
+      return;
+    }
+
+    try {
+      await _player.stop();
+      await _player.setFilePath(_pathForFile(match.file));
+      setState(() => _playingFile = match!.file);
+      await _player.seek(Duration(milliseconds: offsetMs.clamp(0, 1 << 30)));
+      unawaited(_player.play());
+    } catch (e, s) {
+      _log.severe('Failed to seek into recording', e, s);
+      _showMessage('Gagal memutar rekaman: $e');
+    }
   }
 
   void _showMessage(String message) {
@@ -266,8 +305,39 @@ class _RecordingSheetState extends State<RecordingSheet> {
                 },
               ),
             ),
+          if (widget.strokes.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Text(
+              'Lompat ke coretan',
+              style: theme.textTheme.labelMedium,
+            ),
+            const SizedBox(height: 6),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: [
+                for (final stroke in widget.strokes)
+                  ActionChip(
+                    label: Text(_formatDuration(_offsetInRecording(stroke))),
+                    onPressed: () => _playFromStroke(stroke),
+                  ),
+              ],
+            ),
+          ],
         ],
       ),
     );
+  }
+
+  Duration _offsetInRecording(Stroke stroke) {
+    final drawnAt = stroke.timestampMs;
+    if (drawnAt == null) return Duration.zero;
+    for (final recording in widget.recordings) {
+      final start = recording.startEpochMs;
+      if (drawnAt >= start && drawnAt <= start + recording.durationMs + 2000) {
+        return Duration(milliseconds: drawnAt - start);
+      }
+    }
+    return Duration.zero;
   }
 }
