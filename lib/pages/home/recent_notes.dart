@@ -13,6 +13,7 @@ import 'package:saber/components/home/move_note_button.dart';
 import 'package:saber/components/home/new_note_button.dart';
 import 'package:saber/components/home/rename_note_button.dart';
 import 'package:saber/components/home/syncing_button.dart';
+import 'package:saber/components/home/focus_chip.dart';
 import 'package:saber/components/home/streak_chip.dart';
 import 'package:saber/components/home/welcome.dart';
 import 'package:saber/components/theming/saber_theme.dart';
@@ -138,6 +139,7 @@ class _RecentPageState extends State<RecentPage> {
                 ),
               ),
               actions: const [
+                FocusChip(),
                 StreakChip(),
                 HomeLayoutButton(),
                 SyncingButton(),

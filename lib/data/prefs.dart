@@ -233,6 +233,13 @@ class Stows {
     volatile: !_isOnMainIsolate,
   );
 
+  /// Morisnote: completed focus sessions, stored as `yyyy-MM-dd|count`.
+  final focusSessions = PlainStow<String>(
+    'focusSessions',
+    '',
+    volatile: !_isOnMainIsolate,
+  );
+
   /// Morisnote: paper background tint (see lib/data/paper_tint.dart).
   final paperTint = PlainStow<int>(
     'paperTint',

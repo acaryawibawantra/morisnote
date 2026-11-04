@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:saber/data/focus_timer.dart';
 import 'package:saber/data/streak.dart';
 
 /// Morisnote: the daily streak flame, shown in the home app bar.
@@ -118,6 +119,45 @@ class StreakChip extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             Text('Rekor terpanjang: ${data.best} hari'),
+            const Divider(height: 24),
+            ValueListenableBuilder<Duration?>(
+              valueListenable: FocusTimer.remaining,
+              builder: (context, remaining, _) {
+                if (remaining != null) {
+                  return Text(
+                    'Sesi fokus berjalan: ${FocusTimer.format(remaining)}',
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  );
+                }
+                return Row(
+                  children: [
+                    FilledButton.tonalIcon(
+                      onPressed: () {
+                        FocusTimer.start(minutes: 25);
+                        Navigator.of(context).pop();
+                      },
+                      icon: const Icon(Icons.timer_outlined, size: 18),
+                      label: const Text('Fokus 25 mnt'),
+                    ),
+                    const SizedBox(width: 8),
+                    FilledButton.tonal(
+                      onPressed: () {
+                        FocusTimer.start(minutes: 50);
+                        Navigator.of(context).pop();
+                      },
+                      child: const Text('50 mnt'),
+                    ),
+                  ],
+                );
+              },
+            ),
+            ValueListenableBuilder<int>(
+              valueListenable: FocusTimer.sessionsToday,
+              builder: (context, count, _) => Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Text('Sesi fokus selesai hari ini: $count'),
+              ),
+            ),
           ],
         ),
         actions: [
