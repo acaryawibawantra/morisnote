@@ -507,6 +507,14 @@ class _SettingsPageState extends State<SettingsPage> {
                   ),
                 ),
 
+                SettingsSwitch(
+                  title: 'Backup otomatis',
+                  subtitle:
+                      'Salinan catatan sekali sehari, 7 hari terakhir, '
+                      'di Documents/MorisnoteBackup',
+                  icon: CupertinoIcons.tray_arrow_down,
+                  pref: stows.autoBackup,
+                ),
                 SettingsSubtitle(subtitle: t.settings.prefCategories.editor),
                 SettingsSelection(
                   title: t.settings.prefLabels.editorToolbarAlignment,

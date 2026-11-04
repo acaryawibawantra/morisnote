@@ -233,6 +233,13 @@ class Stows {
     volatile: !_isOnMainIsolate,
   );
 
+  /// Morisnote: keep a rolling 7-day copy of every note (see backup_service).
+  final autoBackup = PlainStow(
+    'autoBackup',
+    true,
+    volatile: !_isOnMainIsolate,
+  );
+
   /// Morisnote: completed focus sessions, stored as `yyyy-MM-dd|count`.
   final focusSessions = PlainStow<String>(
     'focusSessions',

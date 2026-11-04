@@ -1358,6 +1358,13 @@ class EditorState extends State<Editor> {
               ),
         FileManager.removeUnusedAssets(filePath, numAssets: assets.length),
       ]);
+      // Morisnote: keep a rolling copy of the note, once per day.
+      unawaited(
+        BackupService.backupNote(
+          notePath: coreInfo.filePath,
+          sourceFilePath: filePath,
+        ),
+      );
       savingState.value = .saved;
       history.markLastChangeAsSaved();
     } catch (e, st) {
