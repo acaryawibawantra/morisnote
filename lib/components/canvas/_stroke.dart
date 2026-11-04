@@ -34,9 +34,13 @@ class Stroke {
   bool pressureEnabled;
   final StrokeOptions options;
 
-  /// Morisnote: milliseconds since the start of the voice recording that was
-  /// running while this stroke was drawn, or null if nothing was recording.
+  /// Morisnote: wall-clock time (ms since epoch) when this stroke was drawn
+  /// while a recording was running, or null if nothing was recording.
   int? timestampMs;
+
+  /// Morisnote: hidden in recall mode. The stroke is drawn as a faint ghost so
+  /// the page still shows *where* it was, but not what it said.
+  bool hidden = false;
 
   List<Offset>? _lowQualityPolygon, _highQualityPolygon;
   List<Offset> get lowQualityPolygon =>
@@ -156,7 +160,8 @@ class Stroke {
      ..timestampMs = switch (json['ts']) {
        final int value => value,
        _ => null,
-     };
+     }
+     ..hidden = json['hd'] == true;
   }
   Map<String, dynamic> toJson() {
     // these json keys should not be the same as the ones in [StrokeOptions.toJson]
@@ -171,6 +176,7 @@ class Stroke {
       'pe': pressureEnabled,
       'c': color.toARGB32(),
       if (timestampMs != null) 'ts': timestampMs,
+      if (hidden) 'hd': true,
     }..addAll(options.toJson());
   }
 

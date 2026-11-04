@@ -638,7 +638,36 @@ class EditorState extends State<Editor> {
     }
   }
 
+
+  /// Morisnote: recall mode — hide the selected strokes so the page shows a
+  /// faint ghost of where they are, then reveal them all to check yourself.
+  void _setSelectionHidden(bool hidden) {
+    final tool = currentTool;
+    if (tool is! Select) return;
+    if (!tool.doneSelecting || tool.selectResult.strokes.isEmpty) return;
+
+    setState(() {
+      for (final stroke in tool.selectResult.strokes) {
+        stroke.hidden = hidden;
+      }
+    });
+    autosaveAfterDelay();
+  }
+
+  /// Morisnote: bring back every hidden stroke on every page.
+  void _revealAllStrokes() {
+    setState(() {
+      for (final page in coreInfo.pages) {
+        for (final stroke in page.strokes) {
+          stroke.hidden = false;
+        }
+      }
+    });
+    autosaveAfterDelay();
+  }
+
   /// Morisnote: keeps a stroke on the ruler's angle, starting where the stroke
+
   /// started and ending at the projection of where the pen lifted.
   void _applyRulerTo(Stroke stroke) {
     final polygon = stroke.lowQualityPolygon;
@@ -2077,6 +2106,26 @@ class EditorState extends State<Editor> {
                         _rulerAngle = 0;
                       }
                     }),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.visibility_off_outlined),
+                    tooltip: 'Sembunyikan pilihan (mode ingat)',
+                    onPressed: () {
+                      _setSelectionHidden(true);
+                      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'Pilihan disembunyikan. Tap ikon mata untuk '
+                            'menampilkan lagi.',
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.visibility_outlined),
+                    tooltip: 'Tampilkan semua coretan',
+                    onPressed: _revealAllStrokes,
                   ),
                   IconButton(
                     icon: const AdaptiveIcon(

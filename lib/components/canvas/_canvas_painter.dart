@@ -86,6 +86,7 @@ class CanvasPainter extends CustomPainter {
     Color? lastColor;
     for (final stroke in strokes) {
       if (stroke.toolId != .highlighter) continue;
+      if (stroke.hidden) continue; // Morisnote: recall mode hides it
 
       final color = stroke.color.withValues(alpha: 1).withInversion(invert);
 
@@ -111,7 +112,10 @@ class CanvasPainter extends CustomPainter {
       if (stroke.toolId == .highlighter) continue;
 
       var color = stroke.color.withInversion(invert);
-      if (currentSelection?.strokes.contains(stroke) ?? false) {
+      if (stroke.hidden) {
+        // Morisnote: recall mode — show a faint ghost instead of the ink.
+        color = color.withValues(alpha: 0.08);
+      } else if (currentSelection?.strokes.contains(stroke) ?? false) {
         color = Color.lerp(color, primaryColor, 0.5)!;
       }
 
