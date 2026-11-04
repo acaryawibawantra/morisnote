@@ -28,6 +28,7 @@ import 'package:saber/components/canvas/image/editor_image.dart';
 import 'package:saber/components/canvas/save_indicator.dart';
 import 'package:saber/components/editor/read_only_banner.dart';
 import 'package:saber/components/editor/recording_sheet.dart';
+import 'package:saber/components/editor/ruler_bar.dart';
 import 'package:saber/components/theming/adaptive_alert_dialog.dart';
 import 'package:saber/components/theming/adaptive_icon.dart';
 import 'package:saber/components/theming/dynamic_material_app.dart';
@@ -147,6 +148,10 @@ class EditorState extends State<Editor> {
   /// Morisnote: auto shape snapping tuning.
   static const _shapeSnapMinExtent = 40.0;
   static const _shapeSnapMinScore = 0.85;
+
+  /// Morisnote: the ruler locks every new stroke to one angle.
+  bool _rulerActive = false;
+  double _rulerAngle = 0; // radians
 
   late bool needsNaming = widget.needsNaming && stows.editorPromptRename.value;
 
@@ -633,6 +638,22 @@ class EditorState extends State<Editor> {
     }
   }
 
+  /// Morisnote: keeps a stroke on the ruler's angle, starting where the stroke
+  /// started and ending at the projection of where the pen lifted.
+  void _applyRulerTo(Stroke stroke) {
+    final polygon = stroke.lowQualityPolygon;
+    if (polygon.length < 2) return;
+
+    final start = polygon.first;
+    final end = polygon.last;
+    final dir = Offset(math.cos(_rulerAngle), math.sin(_rulerAngle));
+    final delta = end - start;
+    final along = delta.dx * dir.dx + delta.dy * dir.dy;
+    if (along.abs() < 1) return;
+
+    stroke.replaceWithLine(start, start + dir * along);
+  }
+
   /// Morisnote: deletes every stroke on [page] that the scribble crosses.
   List<Stroke> _eraseStrokesCrossedBy(Stroke scribble, EditorPage page) {
     int cell(Offset p) => ((p.dx / _scribbleCellSize).floor() << 20) ^
@@ -989,6 +1010,9 @@ class EditorState extends State<Editor> {
             newStroke = snapped;
           }
         }
+
+        // Morisnote: the ruler forces every stroke onto one straight angle.
+        if (_rulerActive) _applyRulerTo(newStroke);
 
         if (stows.autoStraightenLines.value &&
             currentTool is! ShapePen &&
@@ -1768,6 +1792,26 @@ class EditorState extends State<Editor> {
       transformationController: _transformationController,
     );
 
+    final Widget canvasWithRuler = _rulerActive
+        ? Stack(
+            children: [
+              canvas,
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: RulerBar(
+                  angleDegrees: _rulerAngle * 180 / math.pi,
+                  onChanged: (degrees) => setState(() {
+                    _rulerAngle = degrees * math.pi / 180;
+                  }),
+                  onClose: () => setState(() => _rulerActive = false),
+                ),
+              ),
+            ],
+          )
+        : canvas;
+
     final readonlyBanner = ReadOnlyBanner(
       coreInfo.readOnlyReason,
       action: coreInfo.readOnlyReason == .versionTooNew
@@ -1953,7 +1997,7 @@ class EditorState extends State<Editor> {
           Expanded(
             child: Column(
               children: [
-                Expanded(child: canvas),
+                Expanded(child: canvasWithRuler),
                 readonlyBanner,
               ],
             ),
@@ -1967,7 +2011,7 @@ class EditorState extends State<Editor> {
             ? VerticalDirection.up
             : VerticalDirection.down,
         children: [
-          Expanded(child: canvas),
+          Expanded(child: canvasWithRuler),
           toolbar,
           readonlyBanner,
         ],
@@ -2021,6 +2065,21 @@ class EditorState extends State<Editor> {
                   triggerSave: saveToFile,
                 ),
                 actions: [
+                  IconButton(
+                    icon: Icon(
+                      _rulerActive ? Icons.straighten : Icons.straighten_outlined,
+                    ),
+                    tooltip: 'Penggaris (garis lurus)',
+                    color: _rulerActive
+                        ? Theme.of(context).colorScheme.primary
+                        : null,
+                    onPressed: () => setState(() {
+                      _rulerActive = !_rulerActive;
+                      if (_rulerActive && _rulerAngle.abs() < 1e-6) {
+                        _rulerAngle = 0;
+                      }
+                    }),
+                  ),
                   IconButton(
                     icon: const AdaptiveIcon(
                       icon: Icons.mic_none,

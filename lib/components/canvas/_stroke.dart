@@ -353,6 +353,31 @@ class Stroke {
 
   /// Replaces the points in this stroke with a straight line.
   ///
+  /// Morisnote: used by the ruler and by shape snapping, where the exact
+  /// endpoints are already known (no axis snapping involved).
+  void replaceWithLine(Offset start, Offset end) {
+    final pressure = points.isEmpty
+        ? 0.5
+        : points.map((point) => point.pressure ?? 0.5).average;
+    final startPoint = PointVector.fromOffset(
+      offset: start,
+      pressure: pressure,
+    );
+    final endPoint = PointVector.fromOffset(offset: end, pressure: pressure);
+
+    points
+      ..clear()
+      ..add(startPoint)
+      ..add(endPoint)
+      ..add(endPoint);
+    options.isComplete = true;
+    options.start.taperEnabled = false;
+    options.end.taperEnabled = false;
+    markPolygonNeedsUpdating();
+  }
+
+  /// Replaces the points in this stroke with a straight line.
+  ///
   /// If the resulting line is close to horizontal or vertical,
   /// it will be snapped to be exactly horizontal or vertical.
   void convertToLine() {
