@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:collapsible/collapsible.dart';
@@ -135,6 +136,8 @@ class EditorState extends State<Editor> {
   static const _scribbleMinExtent = 48.0;
   static const _scribbleMaxExtent = 1400.0;
   static const _scribbleMinReversals = 4;
+  static const _scribbleReversalHysteresis = 8.0;
+  static const _scribbleMinPathRatio = 2.5;
   static const _scribbleCellSize = 16.0;
 
   late bool needsNaming = widget.needsNaming && stows.editorPromptRename.value;
@@ -520,18 +523,42 @@ class EditorState extends State<Editor> {
     }
     if (width > _scribbleMaxExtent || height > _scribbleMaxExtent) return false;
 
-    // Count how often the movement flips direction along the wider axis.
+    // Count back-and-forth reversals along the wider axis. A small dead band
+    // (hysteresis) is required before a flip counts, so the jitter of a slow
+    // arc or a hand-drawn curve never registers as a zigzag.
     final trackX = width >= height;
     int reversals = 0;
-    int? lastSign;
+    int sign = 0;
+    double progress = 0;
     for (int i = 1; i < pts.length; i++) {
-      final delta = trackX ? pts[i].dx - pts[i - 1].dx : pts[i].dy - pts[i - 1].dy;
-      if (delta.abs() < 1.5) continue;
-      final sign = delta > 0 ? 1 : -1;
-      if (lastSign != null && sign != lastSign) reversals++;
-      lastSign = sign;
+      final delta =
+          trackX ? pts[i].dx - pts[i - 1].dx : pts[i].dy - pts[i - 1].dy;
+      if (delta.abs() < 1.0) continue;
+      final stepSign = delta > 0 ? 1 : -1;
+      if (sign == 0) {
+        sign = stepSign;
+        progress = delta.abs();
+      } else if (stepSign == sign) {
+        progress += delta.abs();
+      } else {
+        progress -= delta.abs();
+        if (progress < -_scribbleReversalHysteresis) {
+          reversals++;
+          sign = stepSign;
+          progress = -progress;
+        }
+      }
     }
-    return reversals >= _scribbleMinReversals;
+    if (reversals < _scribbleMinReversals) return false;
+
+    // A real scribble travels far more than the size of its bounding box.
+    // A single arc, a curved line or a diagonal swipe does not.
+    double pathLength = 0;
+    for (int i = 1; i < pts.length; i++) {
+      pathLength += (pts[i] - pts[i - 1]).distance;
+    }
+    final diagonal = math.sqrt(width * width + height * height);
+    return pathLength >= _scribbleMinPathRatio * diagonal;
   }
 
   /// Morisnote: deletes every stroke on [page] that the scribble crosses.
@@ -889,7 +916,9 @@ class EditorState extends State<Editor> {
 
         createPage(newStroke.pageIndex);
         // Morisnote: scribble-to-erase — a quick back-and-forth scribble
-        // deletes everything it crosses instead of being drawn.
+        // deletes everything it crosses instead of being drawn. If it crosses
+        // nothing, the stroke is kept as normal ink: a scribble can never make
+        // ink disappear on its own.
         if (stows.scribbleToErase.value && _isScribble(newStroke)) {
           final targetPage = coreInfo.pages[newStroke.pageIndex];
           final erased = _eraseStrokesCrossedBy(newStroke, targetPage);
@@ -898,8 +927,8 @@ class EditorState extends State<Editor> {
               HistoricDelete(strokes: erased, images: []),
             );
             autosaveAfterDelay();
+            return;
           }
-          return;
         }
 
         // Morisnote: remember when this stroke was drawn relative to the

@@ -101,6 +101,12 @@ jobs:
       - name: Analyze (errors only, fail fast)
         run: flutter analyze --no-fatal-infos --no-fatal-warnings
 
+      - name: Stamp the build number into the app (Settings → About shows it)
+        run: |
+          set -euo pipefail
+          sed -i "s/^const buildNumber = .*/const buildNumber = ${{ github.run_number }};/" lib/data/version.dart
+          grep -n "^const buildNumber" lib/data/version.dart
+
       - name: Build APK (signed, personal flavour)
         run: |
           flutter build apk --release \
