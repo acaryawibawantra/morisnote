@@ -8,6 +8,7 @@ import 'package:saber/components/canvas/_stroke.dart';
 import 'package:saber/components/canvas/canvas_image.dart';
 import 'package:saber/components/canvas/image/editor_image.dart';
 import 'package:saber/data/editor/editor_core_info.dart';
+import 'package:saber/data/paper_tint.dart';
 import 'package:saber/data/prefs.dart';
 import 'package:saber/data/tools/select.dart';
 import 'package:saber/i18n/strings.g.dart';
@@ -62,9 +63,13 @@ class _InnerCanvasState extends State<InnerCanvas> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final brightness = theme.brightness;
-    final invert = stows.editorAutoInvert.value && brightness == .dark;
+    final tint = PaperTint.fromIndex(stows.paperTint.value);
+    final invert = tint.forcesInvert ||
+        (stows.editorAutoInvert.value && brightness == .dark);
     final Color backgroundColor =
-        widget.coreInfo.backgroundColor ?? InnerCanvas.defaultBackgroundColor;
+        tint.color ??
+        widget.coreInfo.backgroundColor ??
+        InnerCanvas.defaultBackgroundColor;
 
     if (widget.coreInfo.pages.isEmpty) {
       return SizedBox(width: widget.width, height: widget.height);

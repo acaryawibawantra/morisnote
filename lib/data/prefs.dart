@@ -233,6 +233,13 @@ class Stows {
     volatile: !_isOnMainIsolate,
   );
 
+  /// Morisnote: paper background tint (see lib/data/paper_tint.dart).
+  final paperTint = PlainStow<int>(
+    'paperTint',
+    0,
+    volatile: !_isOnMainIsolate,
+  );
+
   /// Morisnote: turn a roughly drawn circle/rectangle/triangle into a clean
   /// geometric shape. Off-switch lives in Settings → Editor.
   final autoSnapShapes = PlainStow(

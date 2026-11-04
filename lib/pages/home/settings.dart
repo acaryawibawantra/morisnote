@@ -8,6 +8,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
 import 'package:saber/components/navbar/responsive_navbar.dart';
 import 'package:saber/components/settings/app_info.dart';
+import 'package:saber/data/paper_tint.dart';
 import 'package:saber/components/settings/nextcloud_profile.dart';
 import 'package:saber/components/settings/settings_button.dart';
 import 'package:saber/components/settings/settings_color.dart';
@@ -450,6 +451,60 @@ class _SettingsPageState extends State<SettingsPage> {
                       'a clean shape when you lift the pen',
                   icon: Icons.auto_fix_high,
                   pref: stows.autoSnapShapes,
+                ),
+                Padding(
+                  padding: const EdgeInsetsDirectional.fromSTEB(20, 8, 20, 8),
+                  child: Row(
+                    children: [
+                      Icon(
+                        CupertinoIcons.paintbrush,
+                        size: 22,
+                        color: ColorScheme.of(context).onSurfaceVariant,
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('Warna kertas'),
+                            Text(
+                              'Tint latar halaman: '
+                              '${PaperTint.fromIndex(stows.paperTint.value).label}',
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                          ],
+                        ),
+                      ),
+                      for (final tint in PaperTint.values)
+                        Padding(
+                          padding: const EdgeInsetsDirectional.only(start: 6),
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(20),
+                            onTap: () {
+                              stows.paperTint.value = tint.index;
+                              setState(() {});
+                            },
+                            child: Container(
+                              width: 28,
+                              height: 28,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: tint.color ??
+                                    Theme.of(context).colorScheme.surface,
+                                border: Border.all(
+                                  width: 2,
+                                  color: stows.paperTint.value == tint.index
+                                      ? Theme.of(context).colorScheme.primary
+                                      : Theme.of(
+                                          context,
+                                        ).colorScheme.outlineVariant,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
 
                 SettingsSubtitle(subtitle: t.settings.prefCategories.editor),
