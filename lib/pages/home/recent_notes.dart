@@ -33,6 +33,11 @@ class _RecentPageState extends State<RecentPage> {
 
   final ValueNotifier<List<String>> selectedFiles = ValueNotifier([]);
 
+  /// Morisnote: filter notes by name straight from the home app bar.
+  bool _searching = false;
+  String _query = '';
+  final TextEditingController _searchController = TextEditingController();
+
   final log = Logger('RecentPage');
 
   /// Mitigates a bug where files got imported starting with `null/` instead of `/`.
@@ -77,6 +82,7 @@ class _RecentPageState extends State<RecentPage> {
 
   @override
   void dispose() {
+    _searchController.dispose();
     selectedFiles.removeListener(_setState);
     fileWriteSubscription?.cancel();
     super.dispose();
@@ -88,6 +94,10 @@ class _RecentPageState extends State<RecentPage> {
   }
 
   void _setState() => setState(() {});
+
+  /// The note's display name, without its `.sbn`/`.sbn2` extension.
+  String _noteName(String filePath) =>
+      filePath.split('/').last.replaceAll(RegExp(r'\.sbn2?$'), '');
 
   Future findRecentlyAccessedNotes({bool fromFileListener = false}) async {
     if (!mounted) return;
@@ -138,14 +148,42 @@ class _RecentPageState extends State<RecentPage> {
                   bottom: 16,
                 ),
               ),
-              actions: const [
-                FocusChip(),
-                StreakChip(),
-                HomeLayoutButton(),
-                SyncingButton(),
+              actions: [
+                const FocusChip(),
+                const StreakChip(),
+                IconButton(
+                  tooltip: 'Cari catatan',
+                  icon: Icon(_searching ? Icons.search_off : Icons.search),
+                  onPressed: () => setState(() {
+                    _searching = !_searching;
+                    _query = '';
+                    _searchController.clear();
+                  }),
+                ),
+                const HomeLayoutButton(),
+                const SyncingButton(),
               ],
             ),
           ),
+          if (_searching)
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsetsDirectional.fromSTEB(16, 0, 16, 8),
+                child: TextField(
+                  controller: _searchController,
+                  autofocus: true,
+                  decoration: InputDecoration(
+                    prefixIcon: const Icon(Icons.search),
+                    hintText: 'Cari catatan...',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    isDense: true,
+                  ),
+                  onChanged: (value) => setState(() => _query = value),
+                ),
+              ),
+            ),
           if (failed) ...[
             const SliverSafeArea(sliver: SliverToBoxAdapter(child: Welcome())),
           ] else ...[
@@ -156,7 +194,14 @@ class _RecentPageState extends State<RecentPage> {
               ),
               sliver: MasonryFiles(
                 crossAxisCount: crossAxisCount,
-                files: [for (final filePath in filePaths) filePath],
+                files: [
+                  for (final filePath in filePaths)
+                    if (_query.isEmpty ||
+                        _noteName(filePath)
+                            .toLowerCase()
+                            .contains(_query.toLowerCase()))
+                      filePath,
+                ],
                 selectedFiles: selectedFiles,
               ),
             ),
