@@ -233,6 +233,21 @@ class Stows {
     volatile: !_isOnMainIsolate,
   );
 
+  /// Morisnote: turn a roughly drawn circle/rectangle/triangle into a clean
+  /// geometric shape. Off-switch lives in Settings → Editor.
+  final autoSnapShapes = PlainStow(
+    'autoSnapShapes',
+    true,
+    volatile: !_isOnMainIsolate,
+  );
+
+  /// Morisnote: streak "api" state, JSON encoded (see lib/data/streak.dart).
+  final streakJson = PlainStow<String>(
+    'streakJson',
+    '',
+    volatile: !_isOnMainIsolate,
+  );
+
   final recentColorsChronological = PlainStow(
     'recentColorsChronological',
     <String>[],

@@ -443,6 +443,14 @@ class _SettingsPageState extends State<SettingsPage> {
                   icon: CupertinoIcons.scribble,
                   pref: stows.scribbleToErase,
                 ),
+                SettingsSwitch(
+                  title: 'Snap to shape',
+                  subtitle:
+                      'A roughly drawn circle, rectangle or triangle becomes '
+                      'a clean shape when you lift the pen',
+                  icon: CupertinoIcons.circle_square,
+                  pref: stows.autoSnapShapes,
+                ),
 
                 SettingsSubtitle(subtitle: t.settings.prefCategories.editor),
                 SettingsSelection(

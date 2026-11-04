@@ -5,6 +5,9 @@ import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:collapsible/collapsible.dart';
+import 'package:one_dollar_unistroke_recognizer/one_dollar_unistroke_recognizer.dart';
+import 'package:saber/components/canvas/_circle_stroke.dart';
+import 'package:saber/components/canvas/_rectangle_stroke.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart' show kDebugMode;
@@ -42,6 +45,7 @@ import 'package:saber/data/extensions/matrix4_extensions.dart';
 import 'package:saber/data/file_manager/file_manager.dart';
 import 'package:saber/data/nextcloud/saber_syncer.dart';
 import 'package:saber/data/prefs.dart';
+import 'package:saber/data/streak.dart';
 import 'package:saber/data/tools/_tool.dart';
 import 'package:saber/data/tools/eraser.dart';
 import 'package:saber/data/tools/highlighter.dart';
@@ -139,6 +143,10 @@ class EditorState extends State<Editor> {
   static const _scribbleReversalHysteresis = 8.0;
   static const _scribbleMinPathRatio = 2.5;
   static const _scribbleCellSize = 16.0;
+
+  /// Morisnote: auto shape snapping tuning.
+  static const _shapeSnapMinExtent = 40.0;
+  static const _shapeSnapMinScore = 0.85;
 
   late bool needsNaming = widget.needsNaming && stows.editorPromptRename.value;
 
@@ -561,6 +569,70 @@ class EditorState extends State<Editor> {
     return pathLength >= _scribbleMinPathRatio * diagonal;
   }
 
+  /// Morisnote: replaces a roughly drawn shape with a clean geometric stroke.
+  ///
+  /// Only circles, rectangles, triangles and stars qualify, and only when the
+  /// recogniser is confident, so ordinary handwriting is left untouched.
+  Stroke? _snapShape(Stroke raw) {
+    if (raw.length < 8) return null;
+
+    final polygon = raw.lowQualityPolygon;
+    double minX = double.infinity, minY = double.infinity;
+    double maxX = -double.infinity, maxY = -double.infinity;
+    for (final p in polygon) {
+      if (p.dx < minX) minX = p.dx;
+      if (p.dx > maxX) maxX = p.dx;
+      if (p.dy < minY) minY = p.dy;
+      if (p.dy > maxY) maxY = p.dy;
+    }
+    if ((maxX - minX) < _shapeSnapMinExtent ||
+        (maxY - minY) < _shapeSnapMinExtent) {
+      return null;
+    }
+
+    final recognised = raw.detectShape();
+    if (recognised == null || recognised.score < _shapeSnapMinScore) {
+      return null;
+    }
+
+    switch (recognised.name) {
+      case DefaultUnistrokeNames.rectangle:
+        return RectangleStroke(
+          color: raw.color,
+          pressureEnabled: raw.pressureEnabled,
+          options: raw.options,
+          pageIndex: raw.pageIndex,
+          page: raw.page,
+          toolId: raw.toolId,
+          rect: recognised.convertToRect(),
+        );
+      case DefaultUnistrokeNames.circle:
+        final (center, radius) = recognised.convertToCircle();
+        return CircleStroke(
+          color: raw.color,
+          pressureEnabled: raw.pressureEnabled,
+          options: raw.options,
+          pageIndex: raw.pageIndex,
+          page: raw.page,
+          toolId: raw.toolId,
+          center: center,
+          radius: radius,
+        );
+      case DefaultUnistrokeNames.triangle:
+      case DefaultUnistrokeNames.star:
+        return Stroke(
+          color: raw.color,
+          pressureEnabled: raw.pressureEnabled,
+          options: raw.options,
+          pageIndex: raw.pageIndex,
+          page: raw.page,
+          toolId: raw.toolId,
+        )..addPoints(recognised.convertToCanonicalPolygon());
+      default:
+        return null;
+    }
+  }
+
   /// Morisnote: deletes every stroke on [page] that the scribble crosses.
   List<Stroke> _eraseStrokesCrossedBy(Stroke scribble, EditorPage page) {
     int cell(Offset p) => ((p.dx / _scribbleCellSize).floor() << 20) ^
@@ -904,9 +976,19 @@ class EditorState extends State<Editor> {
     bool shouldSave = true;
     setState(() {
       if (currentTool is Pen) {
-        final newStroke = (currentTool as Pen).onDragEnd();
-        if (newStroke == null) return;
-        if (newStroke.isEmpty) return;
+        final newStrokeRaw = (currentTool as Pen).onDragEnd();
+        if (newStrokeRaw == null) return;
+        if (newStrokeRaw.isEmpty) return;
+
+        // Morisnote: upgrade a roughly drawn shape to a clean geometric one.
+        var newStroke = newStrokeRaw;
+        if (stows.autoSnapShapes.value && currentTool is! ShapePen) {
+          final snapped = _snapShape(newStrokeRaw);
+          if (snapped != null) {
+            snapped.timestampMs = newStrokeRaw.timestampMs;
+            newStroke = snapped;
+          }
+        }
 
         if (stows.autoStraightenLines.value &&
             currentTool is! ShapePen &&
@@ -1193,6 +1275,9 @@ class EditorState extends State<Editor> {
         savingState.value = .saving;
     }
     if (history.isCurrentStateSaved) return cancelAutosaveAndMarkSaved();
+
+    // Morisnote: saving a note is what keeps the daily streak flame alive.
+    StreakTracker.recordActivity();
 
     await _renameFileNow();
 
