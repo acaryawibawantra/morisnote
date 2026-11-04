@@ -27,5 +27,4 @@ enum PaperTint {
     return values[index];
   }
 
-  int get index => values.indexOf(this);
 }

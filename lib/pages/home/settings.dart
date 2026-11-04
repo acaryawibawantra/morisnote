@@ -481,7 +481,7 @@ class _SettingsPageState extends State<SettingsPage> {
                           child: InkWell(
                             borderRadius: BorderRadius.circular(20),
                             onTap: () {
-                              stows.paperTint.value = tint.index;
+                              stows.paperTint.value = PaperTint.values.indexOf(tint);
                               setState(() {});
                             },
                             child: Container(
@@ -493,7 +493,7 @@ class _SettingsPageState extends State<SettingsPage> {
                                     Theme.of(context).colorScheme.surface,
                                 border: Border.all(
                                   width: 2,
-                                  color: stows.paperTint.value == tint.index
+                                  color: stows.paperTint.value == PaperTint.values.indexOf(tint)
                                       ? Theme.of(context).colorScheme.primary
                                       : Theme.of(
                                           context,
