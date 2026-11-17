@@ -17,11 +17,11 @@ class AiClient {
 
     final uri = Uri.parse('${AiSettings.baseUrl.value}/chat/completions');
     final request = http.Request('POST', uri)
-      ..headers = {
+      ..headers.addAll({
         'Content-Type': 'application/json',
         'Accept': 'text/event-stream',
         'Authorization': 'Bearer $key',
-      }
+      })
       ..body = jsonEncode({
         'model': AiSettings.model.value,
         'messages': messages,

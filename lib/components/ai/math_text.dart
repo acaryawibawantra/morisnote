@@ -114,17 +114,14 @@ class MathText extends StatelessWidget {
   Widget _math(String tex, TextStyle baseStyle, bool display) {
     final source = tex.trim();
     if (source.isEmpty) return const SizedBox.shrink();
-    try {
-      return Math(
-        Expression.parseLatex(source),
-        mathStyle: display ? MathStyle.display : MathStyle.text,
-        textStyle: baseStyle,
-      );
-    } catch (_) {
-      return Text(
+    return Math.tex(
+      source,
+      mathStyle: display ? MathStyle.display : MathStyle.text,
+      textStyle: baseStyle,
+      onErrorFallback: (_) => Text(
         display ? '\$\$$source\$\$' : '\$$source\$',
         style: baseStyle.copyWith(fontFamily: 'monospace', fontSize: 13),
-      );
-    }
+      ),
+    );
   }
 }
