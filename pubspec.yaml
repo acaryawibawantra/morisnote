@@ -55,6 +55,9 @@ dependencies:
   # Morisnote: on-device handwriting recognition (searchable notes)
   digital_ink_recognition_mlkit: ^0.1.1
 
+  # Morisnote: LaTeX rendering for the AI chat tab
+  flutter_math_fork: ^0.7.4
+
   path_provider: ^2.0.11
 
   flutter_secure_storage: ^11.0.0

@@ -68,6 +68,16 @@ abstract class HomeRoutes {
       ),
     ),
     HomeRoute._(
+      _homeFunction({'subpage': HomePage.aiSubpage}),
+      destination: NavigationDestination(
+        label: 'AI',
+        icon: const AdaptiveIcon(
+          icon: Icons.auto_awesome,
+          cupertinoIcon: CupertinoIcons.sparkles,
+        ),
+      ),
+    ),
+    HomeRoute._(
       _homeFunction({'subpage': HomePage.settingsSubpage}),
       destination: NavigationDestination(
         label: t.home.tabs.settings,

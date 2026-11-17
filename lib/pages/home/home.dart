@@ -4,6 +4,7 @@ import 'package:saber/components/home/sentry_consent_dialog.dart';
 import 'package:saber/components/navbar/responsive_navbar.dart';
 import 'package:saber/components/settings/update_manager.dart';
 import 'package:saber/components/theming/dynamic_material_app.dart';
+import 'package:saber/pages/ai/ai_chat_page.dart';
 import 'package:saber/pages/home/browse.dart';
 import 'package:saber/pages/home/recent_notes.dart';
 import 'package:saber/pages/home/settings.dart';
@@ -21,11 +22,13 @@ class HomePage extends StatefulWidget {
   static const recentSubpage = 'recent';
   static const browseSubpage = 'browse';
   static const whiteboardSubpage = 'whiteboard';
+  static const aiSubpage = 'ai';
   static const settingsSubpage = 'settings';
   static const List<String> subpages = [
     recentSubpage,
     browseSubpage,
     whiteboardSubpage,
+    aiSubpage,
     settingsSubpage,
   ];
 }
@@ -57,6 +60,7 @@ class _HomePageState extends State<HomePage> {
         child: switch (widget.subpage) {
           HomePage.browseSubpage => BrowsePage(path: widget.path),
           HomePage.whiteboardSubpage => const Whiteboard(),
+          HomePage.aiSubpage => const AiChatPage(),
           HomePage.settingsSubpage => const SettingsPage(),
           _ => const RecentPage(),
         },
