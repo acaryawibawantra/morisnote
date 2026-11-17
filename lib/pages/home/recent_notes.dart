@@ -18,6 +18,7 @@ import 'package:saber/components/home/streak_chip.dart';
 import 'package:saber/components/home/welcome.dart';
 import 'package:saber/components/theming/saber_theme.dart';
 import 'package:saber/data/file_manager/file_manager.dart';
+import 'package:saber/data/handwriting_ocr.dart';
 import 'package:saber/data/prefs.dart';
 import 'package:saber/data/routes.dart';
 import 'package:saber/i18n/strings.g.dart';
@@ -33,10 +34,13 @@ class _RecentPageState extends State<RecentPage> {
 
   final ValueNotifier<List<String>> selectedFiles = ValueNotifier([]);
 
-  /// Morisnote: filter notes by name straight from the home app bar.
+  /// Morisnote: filter notes by name (and recognized handwriting) from the
+  /// home app bar.
   bool _searching = false;
   String _query = '';
   final TextEditingController _searchController = TextEditingController();
+  final Map<String, String> _ocrText = {};
+  bool _ocrLoaded = false;
 
   final log = Logger('RecentPage');
 
@@ -96,6 +100,36 @@ class _RecentPageState extends State<RecentPage> {
   void _setState() => setState(() {});
 
   /// The note's display name, without its `.sbn`/`.sbn2` extension.
+  /// Matches the note name, or the handwriting recognized into its `.ocr`
+  /// sidecar (see HandwritingOcr).
+  bool _matchesQuery(String filePath) {
+    final query = _query.toLowerCase();
+    if (_noteName(filePath).toLowerCase().contains(query)) return true;
+    final ocr = _ocrText[filePath];
+    return ocr != null && ocr.toLowerCase().contains(query);
+  }
+
+  /// Loads every note's recognized text once, when the search bar opens.
+  Future<void> _loadOcrText() async {
+    if (_ocrLoaded) return;
+    _ocrLoaded = true;
+
+    final loaded = await Future.wait([
+      for (final filePath in filePaths)
+        HandwritingOcr.readText(filePath)
+            .then((text) => MapEntry(filePath, text)),
+    ]);
+    if (!mounted) return;
+    setState(() {
+      for (final entry in loaded) {
+        final text = entry.value;
+        if (text != null && text.trim().isNotEmpty) {
+          _ocrText[entry.key] = text;
+        }
+      }
+    });
+  }
+
   String _noteName(String filePath) =>
       filePath.split('/').last.replaceAll(RegExp(r'\.sbn2?$'), '');
 
@@ -154,11 +188,14 @@ class _RecentPageState extends State<RecentPage> {
                 IconButton(
                   tooltip: 'Cari catatan',
                   icon: Icon(_searching ? Icons.search_off : Icons.search),
-                  onPressed: () => setState(() {
-                    _searching = !_searching;
-                    _query = '';
-                    _searchController.clear();
-                  }),
+                  onPressed: () {
+                    setState(() {
+                      _searching = !_searching;
+                      _query = '';
+                      _searchController.clear();
+                    });
+                    if (_searching) _loadOcrText();
+                  },
                 ),
                 const HomeLayoutButton(),
                 const SyncingButton(),
@@ -196,10 +233,7 @@ class _RecentPageState extends State<RecentPage> {
                 crossAxisCount: crossAxisCount,
                 files: [
                   for (final filePath in filePaths)
-                    if (_query.isEmpty ||
-                        _noteName(filePath)
-                            .toLowerCase()
-                            .contains(_query.toLowerCase()))
+                    if (_query.isEmpty || _matchesQuery(filePath))
                       filePath,
                 ],
                 selectedFiles: selectedFiles,

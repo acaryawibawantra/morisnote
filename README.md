@@ -58,13 +58,31 @@
 >
 > ### What this fork adds
 >
+> **Writing**
 > - **18 paper templates** (upstream has 9): graph paper, isometric, hexagon,
 >   weekly planner, daily planner, checklist, storyboard, calligraphy guides,
 >   half lined, on top of the existing ones.
 > - **Stylus-only drawing**: the pen always inks, the finger always pans/zooms.
-> - **Palm rejection**: touch contacts wider than a threshold never draw.
-> - **Voice notes per page** (in progress): record, play back, and time-stamp
->   strokes against the recording.
+> - **Palm rejection**: wide touch contacts never draw.
+> - **Scribble to erase**: scribble quickly over ink to delete the strokes it
+>   crosses (only strokes it actually crosses, never on an empty page).
+> - **Two-finger tap** deletes the stroke you just drew.
+> - **Snap to shape**: a confident circle, rectangle, triangle or star becomes
+>   a clean shape when the pen lifts.
+> - **Angle ruler**: locks every new stroke to a chosen angle.
+> - **Paper tint**: cream, sepia, mint or dark pages.
+>
+> **Studying**
+> - **Streak api** 🔥: every saved note lights the day; a missed day puts the
+>   fire out. Home app bar shows the flame, a 14-day strip and the best run.
+> - **Focus timer**: 25/50 minute sessions that keep running while you write.
+> - **Recall mode**: select strokes with the lasso and hide them into faint
+>   ghosts, then reveal everything to check yourself. Saved in the note.
+> - **Voice notes per page**: record, play back, and jump the recording to the
+>   exact moment a stroke was drawn.
+> - **Search notes by name** from the home app bar.
+> - **Rolling backups**: one copy per note per day in
+>   `Documents/MorisnoteBackup/<date>/`, last 7 days kept.
 
 Saber is the notes app built for handwriting.
 

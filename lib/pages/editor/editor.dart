@@ -28,6 +28,7 @@ import 'package:saber/components/canvas/image/editor_image.dart';
 import 'package:saber/components/canvas/save_indicator.dart';
 import 'package:saber/components/editor/read_only_banner.dart';
 import 'package:saber/components/editor/recording_sheet.dart';
+import 'package:saber/components/editor/ocr_sheet.dart';
 import 'package:saber/components/editor/ruler_bar.dart';
 import 'package:saber/components/theming/adaptive_alert_dialog.dart';
 import 'package:saber/components/theming/adaptive_icon.dart';
@@ -2134,6 +2135,31 @@ class EditorState extends State<Editor> {
                     icon: const Icon(Icons.visibility_outlined),
                     tooltip: 'Tampilkan semua coretan',
                     onPressed: _revealAllStrokes,
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.translate),
+                    tooltip: 'Kenali tulisan (OCR)',
+                    onPressed: () {
+                      final page = coreInfo.pages[currentPageIndex];
+                      showDialog(
+                        context: context,
+                        builder: (dialogContext) => AdaptiveAlertDialog(
+                          title: const Text('Kenali tulisan'),
+                          content: OcrSheet(
+                            notePath: coreInfo.filePath,
+                            strokes: page.strokes
+                                .where((stroke) => !stroke.hidden)
+                                .toList(),
+                          ),
+                          actions: [
+                            CupertinoDialogAction(
+                              child: Text(t.common.done),
+                              onPressed: () => Navigator.of(dialogContext).pop(),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
                   ),
                   IconButton(
                     icon: const AdaptiveIcon(

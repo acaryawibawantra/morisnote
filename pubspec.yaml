@@ -52,6 +52,9 @@ dependencies:
   record: ^7.1.2
   just_audio: ^0.10.6
 
+  # Morisnote: on-device handwriting recognition (searchable notes)
+  digital_ink_recognition_mlkit: ^0.1.1
+
   path_provider: ^2.0.11
 
   flutter_secure_storage: ^11.0.0
