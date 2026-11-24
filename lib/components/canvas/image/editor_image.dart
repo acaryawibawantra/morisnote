@@ -44,6 +44,9 @@ sealed class EditorImage extends ChangeNotifier {
   int pageIndex;
   void Function(EditorImage, Rect)? onMoveImage;
   void Function(EditorImage)? onDeleteImage;
+
+  /// Morisnote: moves the image to a page chosen in the editor.
+  void Function(EditorImage)? onMoveToPage;
   void Function()? onMiscChange;
   final VoidCallback? onLoad;
 

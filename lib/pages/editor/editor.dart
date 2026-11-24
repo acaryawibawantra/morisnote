@@ -263,6 +263,7 @@ class EditorState extends State<Editor> {
         for (final image in page.images) {
           image.onMoveImage = onMoveImage;
           image.onDeleteImage = onDeleteImage;
+          image.onMoveToPage = choosePageAndMoveImage;
           image.onMiscChange = autosaveAfterDelay;
         }
       }
@@ -1187,6 +1188,57 @@ class EditorState extends State<Editor> {
     autosaveAfterDelay();
   }
 
+  /// Morisnote: asks which page should receive the image, then moves it.
+  Future<void> choosePageAndMoveImage(EditorImage image) async {
+    final pageIndex = await showDialog<int>(
+      context: context,
+      builder: (dialogContext) => AdaptiveAlertDialog(
+        title: const Text('Pindahkan ke halaman'),
+        content: SizedBox(
+          width: 300,
+          height: 360,
+          child: ListView.builder(
+            itemCount: coreInfo.pages.length,
+            itemBuilder: (context, index) => ListTile(
+              leading: const Icon(Icons.description_outlined),
+              title: Text(
+                index == image.pageIndex
+                    ? 'Halaman ${index + 1} (sekarang)'
+                    : 'Halaman ${index + 1}',
+              ),
+              onTap: () => Navigator.of(dialogContext).pop(index),
+            ),
+          ),
+        ),
+        actions: [
+          CupertinoDialogAction(
+            child: Text(t.common.cancel),
+            onPressed: () => Navigator.of(dialogContext).pop(),
+          ),
+        ],
+      ),
+    );
+    if (pageIndex == null) return;
+    onMoveImageToPage(image, pageIndex);
+  }
+
+  /// Morisnote: moves an image (and its own pageIndex) to another page.
+  /// ponytail: not recorded in undo history — add a HistoricMove variant when
+  /// cross-page moves prove popular.
+  void onMoveImageToPage(EditorImage image, int newPageIndex) {
+    if (newPageIndex == image.pageIndex ||
+        newPageIndex < 0 ||
+        newPageIndex >= coreInfo.pages.length) {
+      return;
+    }
+    setState(() {
+      coreInfo.pages[image.pageIndex].images.remove(image);
+      image.pageIndex = newPageIndex;
+      coreInfo.pages[newPageIndex].images.add(image);
+    });
+    autosaveAfterDelay();
+  }
+
   void onDeleteImage(EditorImage image) {
     history.recordChange(HistoricDelete(strokes: [], images: [image]));
     setState(() {
@@ -1553,6 +1605,9 @@ class EditorState extends State<Editor> {
       history.recordChange(HistoricAdd(strokes: const [], images: images));
       createPage(currentPageIndex);
       coreInfo.pages[currentPageIndex].images.addAll(images);
+      for (final image in images) {
+        image.onMoveToPage = choosePageAndMoveImage;
+      }
       autosaveAfterDelay();
     }
 

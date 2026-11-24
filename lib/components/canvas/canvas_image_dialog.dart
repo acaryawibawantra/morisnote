@@ -62,6 +62,18 @@ class _CanvasImageDialogState extends State<CanvasImageDialog> {
           ),
         ),
       ),
+      if (widget.image.onMoveToPage != null)
+        _CanvasImageDialogItem(
+          onTap: () {
+            widget.image.onMoveToPage?.call(widget.image);
+            Navigator.of(context).pop();
+          },
+          title: 'Pindah ke halaman lain',
+          child: const AdaptiveIcon(
+            icon: Icons.drive_file_move_outline,
+            cupertinoIcon: CupertinoIcons.arrow_right,
+          ),
+        ),
       _CanvasImageDialogItem(
         onTap: () async {
           final filePathSanitized = widget.filePath.replaceAll(

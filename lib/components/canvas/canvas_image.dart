@@ -112,6 +112,7 @@ class _CanvasImageState extends State<CanvasImage> {
       ignoring: widget.readOnly,
       child: Stack(
         fit: StackFit.expand,
+        clipBehavior: Clip.none,
         children: [
           MouseRegion(
             cursor: active ? SystemMouseCursors.grab : MouseCursor.defer,
@@ -120,8 +121,10 @@ class _CanvasImageState extends State<CanvasImage> {
               onTap: () {
                 active = !active;
               },
-              onLongPress: active ? showModal : null,
-              onSecondaryTap: active ? showModal : null,
+              // Morisnote: long-press opens image options even before the
+              // image is selected — discoverability.
+              onLongPress: showModal,
+              onSecondaryTap: showModal,
               onPanStart: active
                   ? (details) {
                       panStartRect = widget.image.dstRect;
@@ -219,6 +222,40 @@ class _CanvasImageState extends State<CanvasImage> {
                     parent: this,
                     afterDrag: () => setState(() {}),
                   ),
+          if (active && !widget.readOnly)
+            Positioned(
+              top: -54,
+              left: 0,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: colorScheme.primaryContainer,
+                  borderRadius: BorderRadius.circular(24),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      tooltip: 'Opsi gambar',
+                      onPressed: showModal,
+                      icon: const Icon(Icons.tune),
+                    ),
+                    if (widget.image.onMoveToPage != null)
+                      IconButton(
+                        tooltip: 'Pindah ke halaman lain',
+                        onPressed: () =>
+                            widget.image.onMoveToPage?.call(widget.image),
+                        icon: const Icon(Icons.drive_file_move_outline),
+                      ),
+                    IconButton(
+                      tooltip: 'Hapus gambar',
+                      onPressed: () =>
+                          widget.image.onDeleteImage?.call(widget.image),
+                      icon: const Icon(Icons.delete_outline),
+                    ),
+                  ],
+                ),
+              ),
+            ),
         ],
       ),
     );

@@ -7,7 +7,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:keybinder/keybinder.dart';
-import 'package:logging/logging.dart';
+import 'package:logging/logging.dart' show Level, Logger;
 import 'package:saber/components/canvas/hud/canvas_hud.dart';
 import 'package:saber/components/canvas/interactive_canvas.dart';
 import 'package:saber/data/editor/page.dart';
@@ -470,7 +470,9 @@ class CanvasGestureDetectorState extends State<CanvasGestureDetector> {
         (event is PointerDownEvent || event is PointerMoveEvent)) {
       final contactSize = event.size;
       isPalm = contactSize >= _palmRejectionThreshold;
-      if (contactSize > 4) {
+      // Morisnote: string interpolation here used to run on every pointer
+      // move and stutter the pen, so only build it when FINE is enabled.
+      if (contactSize > 4 && _log.isLoggable(Level.FINE)) {
         _log.fine(
           'touch contact ${contactSize.toStringAsFixed(1)}px '
           '(${isPalm ? 'palm' : 'finger'}, '
