@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'dart:typed_data';
 
 import 'package:defer_pointer/defer_pointer.dart';
 import 'package:flutter/material.dart';
@@ -8,6 +9,7 @@ import 'package:saber/components/canvas/image/editor_image.dart';
 import 'package:saber/components/theming/adaptive_alert_dialog.dart';
 import 'package:saber/data/extensions/change_notifier_extensions.dart';
 import 'package:saber/data/prefs.dart';
+import 'package:saber/pages/editor/image_crop_page.dart';
 import 'package:saber/i18n/strings.g.dart';
 
 class CanvasImage extends StatefulHookWidget {
@@ -118,13 +120,19 @@ class _CanvasImageState extends State<CanvasImage> {
             cursor: active ? SystemMouseCursors.grab : MouseCursor.defer,
             child: GestureDetector(
               behavior: HitTestBehavior.opaque,
+              // Morisnote: one tap selects the image and opens the action
+              // sheet (delete, crop, move to another page).
               onTap: () {
-                active = !active;
+                if (widget.readOnly) {
+                  active = !active;
+                  return;
+                }
+                showImageMenu();
               },
               // Morisnote: long-press opens image options even before the
               // image is selected — discoverability.
-              onLongPress: showModal,
-              onSecondaryTap: showModal,
+              onLongPress: showImageMenu,
+              onSecondaryTap: showImageMenu,
               onPanStart: active
                   ? (details) {
                       panStartRect = widget.image.dstRect;
@@ -236,7 +244,7 @@ class _CanvasImageState extends State<CanvasImage> {
                   children: [
                     IconButton(
                       tooltip: 'Opsi gambar',
-                      onPressed: showModal,
+                      onPressed: showImageMenu,
                       icon: const Icon(Icons.tune),
                     ),
                     if (widget.image.onMoveToPage != null)
@@ -292,6 +300,111 @@ class _CanvasImageState extends State<CanvasImage> {
     widget.image.loadOut();
     CanvasImage.activeListener.removeListener(disableActive);
     super.dispose();
+  }
+
+  /// Morisnote: action sheet for an image — the only reliable place to
+  /// reach delete/crop, since a floating toolbar can be clipped by the page.
+  Future<void> showImageMenu() async {
+    setState(() => active = true);
+
+    final image = widget.image;
+    final provider = image is PngEditorImage ? image.imageProvider : null;
+    final bytes = provider is MemoryImage ? provider.bytes : null;
+    final isBackground = widget.isBackground;
+
+    final action = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (bytes != null)
+              ListTile(
+                leading: const Icon(Icons.crop),
+                title: const Text('Potong gambar'),
+                onTap: () => Navigator.of(sheetContext).pop('crop'),
+              ),
+            if (image.onMoveToPage != null)
+              ListTile(
+                leading: const Icon(Icons.drive_file_move_outline),
+                title: const Text('Pindah ke halaman lain'),
+                onTap: () => Navigator.of(sheetContext).pop('move'),
+              ),
+            if (widget.setAsBackground != null)
+              ListTile(
+                leading: Icon(
+                  isBackground
+                      ? Icons.wallpaper_outlined
+                      : Icons.wallpaper,
+                ),
+                title: Text(
+                  isBackground
+                      ? 'Jangan jadikan latar'
+                      : 'Jadikan latar halaman',
+                ),
+                onTap: () => Navigator.of(sheetContext).pop('background'),
+              ),
+            ListTile(
+              leading: const Icon(Icons.tune),
+              title: const Text('Opsi lain (unduh, ukuran)'),
+              onTap: () => Navigator.of(sheetContext).pop('options'),
+            ),
+            ListTile(
+              leading: Icon(
+                Icons.delete_outline,
+                color: Theme.of(sheetContext).colorScheme.error,
+              ),
+              title: Text(
+                'Hapus gambar',
+                style: TextStyle(
+                  color: Theme.of(sheetContext).colorScheme.error,
+                ),
+              ),
+              onTap: () => Navigator.of(sheetContext).pop('delete'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (!mounted || action == null) return;
+    switch (action) {
+      case 'crop':
+        if (bytes != null) await _cropImage(bytes);
+      case 'move':
+        image.onMoveToPage?.call(image);
+      case 'background':
+        widget.setAsBackground?.call(image);
+      case 'delete':
+        image.onDeleteImage?.call(image);
+      case 'options':
+        showModal();
+    }
+  }
+
+  Future<void> _cropImage(Uint8List bytes) async {
+    final image = widget.image;
+    final cropped = await ImageCropPage.show(
+      context,
+      bytes: bytes,
+      naturalSize: image.naturalSize,
+      initialSrc: image.srcRect,
+    );
+    if (cropped == null || !mounted) return;
+
+    setState(() {
+      image.srcRect = cropped;
+      // keep the cropped content at the same visual scale
+      final width = image.dstRect.width;
+      image.dstRect = Rect.fromLTWH(
+        image.dstRect.left,
+        image.dstRect.top,
+        width,
+        width * cropped.height / cropped.width,
+      );
+    });
+    image.onMiscChange?.call();
   }
 
   void showModal() {
