@@ -4,6 +4,7 @@ import 'package:flutter_quill/flutter_quill.dart';
 import 'package:one_dollar_unistroke_recognizer/one_dollar_unistroke_recognizer.dart';
 import 'package:saber/components/canvas/_canvas_background_painter.dart';
 import 'package:saber/components/canvas/_canvas_painter.dart';
+import 'package:saber/data/tools/laser_pointer.dart';
 import 'package:saber/components/canvas/_stroke.dart';
 import 'package:saber/components/canvas/canvas_image.dart';
 import 'package:saber/components/canvas/image/editor_image.dart';
@@ -108,8 +109,17 @@ class _InnerCanvasState extends State<InnerCanvas> {
           )
         : null;
 
+    // Morisnote: the in-progress stroke is drawn on its own overlay layer so
+    // pen moves don't repaint the whole page. The page painter only keeps the
+    // current stroke when it's the laser (which fades via page redraws).
+    final currentStroke = widget.currentStroke is LaserStroke
+        ? widget.currentStroke
+        : null;
+
     return RepaintBoundary(
-      child: CustomPaint(
+      child: Stack(
+        children: [
+          CustomPaint(
         painter: CanvasBackgroundPainter(
           invert: invert,
           backgroundColor: () {
@@ -136,7 +146,7 @@ class _InnerCanvasState extends State<InnerCanvas> {
           invert: invert,
           strokes: page.strokes,
           laserStrokes: page.laserStrokes,
-          currentStroke: widget.currentStroke,
+          currentStroke: currentStroke,
           currentSelection: widget.currentSelection,
           primaryColor: colorScheme.primary,
           page: page,
@@ -191,6 +201,25 @@ class _InnerCanvasState extends State<InnerCanvas> {
             ),
           ),
         ),
+      ),
+          Positioned.fill(
+            child: IgnorePointer(
+              child: RepaintBoundary(
+                child: CustomPaint(
+                  painter: CurrentStrokePainter(
+                    repaint: page.currentStrokeRedraw,
+                    currentStroke: widget.currentStroke,
+                    invert: invert,
+                    page: page,
+                    primaryColor: colorScheme.primary,
+                  ),
+                  isComplex: true,
+                  willChange: true,
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

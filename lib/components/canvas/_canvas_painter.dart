@@ -156,6 +156,32 @@ class CanvasPainter extends CustomPainter {
     }
   }
 
+  /// Morisnote: shared by [CanvasPainter] and [CurrentStrokePainter].
+  static void drawCurrentStroke(
+    Canvas canvas,
+    Stroke stroke, {
+    required bool invert,
+    required EditorPage page,
+  }) {
+    final color = stroke.color.withInversion(invert);
+    final paint = Paint();
+
+    paint.color = color;
+    paint.shader = null;
+    paint.maskFilter = null;
+    if (stroke.toolId == .pencil) {
+      paint.color = Colors.white;
+      paint.shader = page.pencilShader
+        ..setFloat(0, color.r)
+        ..setFloat(1, color.g)
+        ..setFloat(2, color.b);
+      paint.maskFilter = _getPencilMaskFilter(stroke.options.size);
+    }
+
+    // Current stroke always uses high quality
+    canvas.drawPath(stroke.highQualityPath, paint);
+  }
+
   void _drawCurrentStroke(Canvas canvas) {
     if (currentStroke == null) return;
 
@@ -163,23 +189,7 @@ class CanvasPainter extends CustomPainter {
       return _drawLaserStroke(canvas, currentStroke as LaserStroke);
     }
 
-    final color = currentStroke!.color.withInversion(invert);
-    final paint = Paint();
-
-    paint.color = color;
-    paint.shader = null;
-    paint.maskFilter = null;
-    if (currentStroke!.toolId == .pencil) {
-      paint.color = Colors.white;
-      paint.shader = page.pencilShader
-        ..setFloat(0, color.r)
-        ..setFloat(1, color.g)
-        ..setFloat(2, color.b);
-      paint.maskFilter = _getPencilMaskFilter(currentStroke!.options.size);
-    }
-
-    // Current stroke always uses high quality
-    canvas.drawPath(currentStroke!.highQualityPath, paint);
+    drawCurrentStroke(canvas, currentStroke!, invert: invert, page: page);
   }
 
   void _drawLaserStroke(Canvas canvas, LaserStroke stroke) {
@@ -196,6 +206,21 @@ class CanvasPainter extends CustomPainter {
   }
 
   void _drawDetectedShape(Canvas canvas) {
+    drawDetectedShape(
+      canvas,
+      currentStroke,
+      invert: invert,
+      primaryColor: primaryColor,
+    );
+  }
+
+  /// Morisnote: shared by [CanvasPainter] and [CurrentStrokePainter].
+  static void drawDetectedShape(
+    Canvas canvas,
+    Stroke? currentStroke, {
+    required bool invert,
+    required Color primaryColor,
+  }) {
     final shape = ShapePen.detectedShape;
     if (shape == null) return;
 
@@ -302,4 +327,40 @@ class CanvasPainter extends CustomPainter {
     < _zoomThreshold => stroke.lowQualityPath,
     _ => stroke.highQualityPath,
   };
+}
+
+/// Morisnote: draws only the in-progress stroke, on its own layer, so moving
+/// the pen doesn't repaint every stroke on the page (GoodNotes-like smoothness
+/// on dense notes).
+class CurrentStrokePainter extends CustomPainter {
+  const new({
+    required super.repaint,
+    required this.currentStroke,
+    required this.invert,
+    required this.page,
+    required this.primaryColor,
+  });
+
+  final Stroke? currentStroke;
+  final bool invert;
+  final EditorPage page;
+  final Color primaryColor;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final stroke = currentStroke;
+    if (stroke == null || stroke is LaserStroke) return;
+    CanvasPainter.drawCurrentStroke(canvas, stroke, invert: invert, page: page);
+    CanvasPainter.drawDetectedShape(
+      canvas,
+      stroke,
+      invert: invert,
+      primaryColor: primaryColor,
+    );
+  }
+
+  @override
+  bool shouldRepaint(CurrentStrokePainter oldDelegate) =>
+      currentStroke != oldDelegate.currentStroke ||
+      invert != oldDelegate.invert;
 }

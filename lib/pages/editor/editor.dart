@@ -879,7 +879,13 @@ class EditorState extends State<Editor> {
 
     if (currentTool is Pen) {
       (currentTool as Pen).onDragUpdate(position, currentPressure);
-      page.redrawStrokes();
+      if (currentTool is ShapePen) {
+        // Shape preview is drawn by the page painter
+        page.redrawStrokes();
+      } else {
+        // Morisnote: only repaint the in-progress stroke layer
+        page.redrawCurrentStroke();
+      }
     } else if (currentTool is Eraser) {
       for (final stroke in (currentTool as Eraser).checkForOverlappingStrokes(
         position,

@@ -281,6 +281,11 @@ class EditorPage extends ChangeNotifier implements HasSize {
     notifyListeners();
   }
 
+  /// Morisnote: repaints only the in-progress stroke overlay layer, not the
+  /// whole page — makes pen drawing smooth on dense notes.
+  final ValueNotifier<int> currentStrokeRedraw = ValueNotifier<int>(0);
+  void redrawCurrentStroke() => currentStrokeRedraw.value++;
+
   /// Updates the `pageIndex` fields of this page's strokes/images.
   void updatePageIndex(int pageIndex) {
     for (final stroke in strokes) stroke.pageIndex = pageIndex;

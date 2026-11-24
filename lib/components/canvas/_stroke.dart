@@ -245,11 +245,9 @@ class Stroke {
     final polygon = getStroke(
       skipPoints(points, quality.N),
       options: quality.isLowQuality
-          ? options.copyWith(
-              simulatePressure: false,
-              smoothing: 0,
-              streamline: 0,
-            )
+          // Morisnote: keep streamline while drawing so the live stroke is
+          // already smoothed — no snap when the stroke finishes.
+          ? options.copyWith(simulatePressure: false, smoothing: 0)
           : options,
       rememberSimulatedPressure: rememberSimulatedPressure,
     );
